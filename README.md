@@ -1,4 +1,4 @@
-# C01 GrooveGalaxy / BombAppetit / BlingBank / MediTrack Project Read Me
+# C01 MediTrack Project Read Me
 
 <!-- this is an instruction line; after you follow the instruction, delete the corresponding line. Do the same for all instruction lines! -->
 
