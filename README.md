@@ -16,7 +16,7 @@
 
 *(fill table above with team member information)*  
 
-![Diogo](img/diogo.png) ![Bob](img/bob.png) ![Charlie](img/charlie.png)
+![Diogo](img/diogo.png | height="150") ![Bob](img/bob.png) ![Charlie](img/charlie.png)
 
 *(add face photos with 150px height; faces should have similar size and framing)*
 
