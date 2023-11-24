@@ -16,7 +16,7 @@
 
 *(fill table above with team member information)*  
 
-<img src='img/diogo.png' height='150'> ![Bob](img/bob.png) <img src='img/stas.jpg' height='150'>
+<img src='img/diogo.png' height='150'> <img src='img/allan.jpg' height='150'> <img src='img/stas.jpg' height='150'>
 
 *(add face photos with 150px height; faces should have similar size and framing)*
 
