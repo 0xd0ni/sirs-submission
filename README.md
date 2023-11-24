@@ -12,11 +12,11 @@
 | -------|-------------------|----------------------------------| ------------------------------------|
 | 95552  | Diogo Silva       | <https://github.com/diogosil01>   | <mailto:diogo.armando.barreiro.da.silva@tecnico.ulisboa.pt>   |
 | 97281  | Allan Fernandes   | <https://github.com/doonic>     | <mailto:allancravid@tecnico.ulisboa.pt>     |
-| 33333  | Charlie Security  | <https://github.com/CharlieUser> | <mailto:charlie@tecnico.ulisboa.pt> |
+| 99330  | Stanislaw Talejko | <https://github.com/stani-s>    | <mailto:stanislaw.talejko@tecnico.ulisboa.pt> |
 
 *(fill table above with team member information)*  
 
-<img src='img/diogo.png' height='150'> ![Bob](img/bob.png) ![Charlie](img/charlie.png)
+<img src='img/diogo.png' height='150'> ![Bob](img/bob.png) <img src='img/stas.jpg' height='150'>
 
 *(add face photos with 150px height; faces should have similar size and framing)*
 
