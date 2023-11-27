@@ -1,4 +1,4 @@
-package tecnico.a01;
+package pt.tecnico.a01;
 
 import static org.junit.Assert.assertTrue;
 

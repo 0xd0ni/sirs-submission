@@ -1,10 +1,10 @@
-package tecnico.a01;
+package pt.tecnico.a01;
 
 /**
  * Hello world!
  *
  */
-public class App 
+public class MediTrack
 {
     public static void main( String[] args )
     {
@@ -36,7 +36,7 @@ public class App
         }
     }
 
-    public void printUsage() {
+    public static void printUsage() {
         System.out.println("Usage:");
         System.out.println("protect *filename*");
         System.out.println("unprotect *filename*");
