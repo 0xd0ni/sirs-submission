@@ -1,10 +1,4 @@
-# A01 MediTrack Project Read Me
-
-<!-- this is an instruction line; after you follow the instruction, delete the corresponding line. Do the same for all instruction lines! -->
-
-*(replace CXX above with group identifier, for example, A07 ou T22)*
-
-*(keep only your scenario name and delete the other names)*
+# A01 MediTrack 
 
 ## Team
 
@@ -14,11 +8,8 @@
 | 97281  | Allan Fernandes   | <https://github.com/doonic>     | <mailto:allancravid@tecnico.ulisboa.pt>     |
 | 99330  | Stanislaw Talejko | <https://github.com/stani-s>    | <mailto:stanislaw.talejko@tecnico.ulisboa.pt> |
 
-*(fill table above with team member information)*  
-
 <img src='img/diogo.png' height='150'> <img src='img/allan.jpg' height='150'> <img src='img/stas.jpg' height='150'>
 
-*(add face photos with 150px height; faces should have similar size and framing)*
 
 ## Contents
 
