@@ -1,4 +1,4 @@
-package pt.tecnico.a01;
+package main.java.pt.tecnico.a01;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;

@@ -1,5 +1,6 @@
-package pt.tecnico.a01;
+package main.java.pt.tecnico.a01;
 
+import main.java.pt.tecnico.a01.cryptography.CryptoLibrary;
 /**
  * Hello world!
  *
@@ -13,6 +14,12 @@ public class MediTrack
         } else if (args.length == 2){
             if (args[0].equals("protect")) {
                 System.out.println("Protecting file " + args[1]);
+                try {
+                    CryptoLibrary.protect(args[1]);
+                }
+                catch (Exception e) {
+                    System.out.println("Error: " + e);
+                }
                 // Create Digest
                 // Encrypt with public key
                 // Encode to Base64

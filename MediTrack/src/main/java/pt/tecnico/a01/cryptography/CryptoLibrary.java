@@ -1,4 +1,4 @@
-package pt.tecnico.a01.cryptography;
+package main.java.pt.tecnico.a01.cryptography;
 import java.io.*;
 import java.util.*;
 import java.security.KeyPair;
@@ -27,24 +27,31 @@ public class CryptoLibrary {
             JsonObject rootJson = gson.fromJson(fileReader, JsonObject.class);
             System.out.println("JSON object: " + rootJson);
             JsonObject patientObject = rootJson.get("patient").getAsJsonObject();
-            String[] aes_fields = {"name","sex"};
-            String[] rsa_fields = {"dateOfBirth","bloodType","knownAllergies","consultationRecords"};
+            JsonObject finalFileObject = new JsonObject();
+            JsonObject encryptedFileObject = new JsonObject();
+            String[] aes_fields = {"name","sex", "consultationRecords"};
+            String[] rsa_fields = {"dateOfBirth","bloodType","knownAllergies"};
             for (String field: aes_fields)
-            {
-                byte[] bytes = patientObject.get(field).getAsString().getBytes();
+            {   
+                byte[] bytes = null;
+                if (field.equals("consultationRecords")) {
+                    bytes = gson.toJson(patientObject.get(field)).getBytes();
+                }
+                else {
+                    bytes = patientObject.get(field).getAsString().getBytes();
+                }
                 byte[] encryptedBytes = aes_encrypt(bytes);
                 String encryptedBase64 = Base64.getEncoder().encodeToString(encryptedBytes);
-                patientObject.addProperty(field, encryptedBase64);
+                encryptedFileObject.addProperty(field, encryptedBase64);
             }
-
             for (String field: rsa_fields)
-            {
+            {   
                 byte[] bytes = patientObject.get(field).getAsString().getBytes();
                 byte[] encryptedBytes = rsa_encrypt(bytes);
                 String encryptedBase64 = Base64.getEncoder().encodeToString(encryptedBytes);
-                patientObject.addProperty(field, encryptedBase64);
+                encryptedFileObject.addProperty(field, encryptedBase64);
             }
-
+            System.out.println(gson.toJson(encryptedFileObject));
         }
     }
 
