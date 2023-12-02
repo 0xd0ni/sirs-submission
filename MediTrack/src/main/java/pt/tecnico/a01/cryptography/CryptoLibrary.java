@@ -3,6 +3,7 @@ import java.io.*;
 import java.util.*;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.MessageDigest;
 import javax.crypto.Cipher;
 import java.security.Key;
 import javax.crypto.KeyGenerator;
@@ -31,6 +32,7 @@ public class CryptoLibrary {
             JsonObject encryptedFileObject = new JsonObject();
             String[] aes_fields = {"name","sex", "consultationRecords"};
             String[] rsa_fields = {"dateOfBirth","bloodType","knownAllergies"};
+            // Add management of keys
             for (String field: aes_fields)
             {   
                 byte[] bytes = null;
@@ -51,7 +53,18 @@ public class CryptoLibrary {
                 String encryptedBase64 = Base64.getEncoder().encodeToString(encryptedBytes);
                 encryptedFileObject.addProperty(field, encryptedBase64);
             }
-            System.out.println(gson.toJson(encryptedFileObject));
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(gson.toJson(encryptedFileObject).getBytes("UTF-8"));
+
+            KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+            keyGen.initialize(2048);
+            // Server's key
+            KeyPair keyPair = keyGen.generateKeyPair();
+            byte[] encryptedHash = rsa_encrypt(hash, keyPair.getPrivate());
+            String hashBase64 = Base64.getEncoder().encodeToString(encryptedHash);
+            finalFileObject.addProperty("hash", hashBase64);
+            // Save symmetric key as well
+            System.out.println(gson.toJson(finalFileObject));
         }
     }
 
@@ -90,6 +103,16 @@ public class CryptoLibrary {
         System.out.println("Ciphering with " + CIPHER_ALGO + "...");
         Cipher cipher = Cipher.getInstance(CIPHER_ALGO);
         cipher.init(Cipher.ENCRYPT_MODE, keyPair.getPublic());
+        byte[] cipherBytes = cipher.doFinal(bytes);
+        return cipherBytes;
+    }
+
+    public static byte[] rsa_encrypt(byte[] bytes, Key key) throws Exception{
+        // cipher data
+        final String CIPHER_ALGO = "RSA/ECB/PKCS1Padding";
+        System.out.println("Ciphering with " + CIPHER_ALGO + "...");
+        Cipher cipher = Cipher.getInstance(CIPHER_ALGO);
+        cipher.init(Cipher.ENCRYPT_MODE, key);
         byte[] cipherBytes = cipher.doFinal(bytes);
         return cipherBytes;
     }
