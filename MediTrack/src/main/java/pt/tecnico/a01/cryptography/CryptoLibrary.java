@@ -66,7 +66,7 @@ public class CryptoLibrary {
 		keyGen.init(128);
 		Key key = keyGen.generateKey();
         // cipher data
-        final String CIPHER_ALGO = "AES/aes/PKCS5Padding";
+        final String CIPHER_ALGO = "AES/ECB/PKCS5Padding";
         System.out.println("Ciphering with " + CIPHER_ALGO + "...");
         Cipher cipher = Cipher.getInstance(CIPHER_ALGO);
         cipher.init(Cipher.ENCRYPT_MODE, key);
@@ -79,7 +79,7 @@ public class CryptoLibrary {
 		keyGen.initialize(2048);
 		KeyPair keyPair = keyGen.generateKeyPair();
         // cipher data
-        final String CIPHER_ALGO = "RSA/aes/PKCS1Padding";
+        final String CIPHER_ALGO = "RSA/ECB/PKCS1Padding";
         System.out.println("Ciphering with " + CIPHER_ALGO + "...");
         Cipher cipher = Cipher.getInstance(CIPHER_ALGO);
         cipher.init(Cipher.ENCRYPT_MODE, keyPair.getPublic());
