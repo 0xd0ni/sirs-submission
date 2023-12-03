@@ -33,6 +33,9 @@ public class CryptoLibrary {
             String[] aes_fields = {"name","sex", "consultationRecords"};
             String[] rsa_fields = {"dateOfBirth","bloodType","knownAllergies"};
             // Add management of keys
+            KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+		    keyGen.init(128);
+		    Key key = keyGen.generateKey();
             for (String field: aes_fields)
             {   
                 byte[] bytes = null;
@@ -42,25 +45,24 @@ public class CryptoLibrary {
                 else {
                     bytes = patientObject.get(field).getAsString().getBytes();
                 }
-                byte[] encryptedBytes = aes_encrypt(bytes);
+                byte[] encryptedBytes = aes_encrypt(bytes,key);
                 String encryptedBase64 = Base64.getEncoder().encodeToString(encryptedBytes);
                 encryptedFileObject.addProperty(field, encryptedBase64);
             }
+            KeyPairGenerator keyGenRSA = KeyPairGenerator.getInstance("RSA");
+            keyGenRSA.initialize(2048);
+            // Server's key
+            KeyPair keyPair = keyGenRSA.generateKeyPair();
             for (String field: rsa_fields)
             {   
                 byte[] bytes = patientObject.get(field).getAsString().getBytes();
-                byte[] encryptedBytes = rsa_encrypt(bytes);
+                byte[] encryptedBytes = rsa_encrypt_public(bytes,keyPair.getPublic());
                 String encryptedBase64 = Base64.getEncoder().encodeToString(encryptedBytes);
                 encryptedFileObject.addProperty(field, encryptedBase64);
             }
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(gson.toJson(encryptedFileObject).getBytes("UTF-8"));
-
-            KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-            keyGen.initialize(2048);
-            // Server's key
-            KeyPair keyPair = keyGen.generateKeyPair();
-            byte[] encryptedHash = rsa_encrypt(hash, keyPair.getPrivate());
+            byte[] encryptedHash = rsa_encrypt_private(hash, keyPair.getPrivate());
             String hashBase64 = Base64.getEncoder().encodeToString(encryptedHash);
             finalFileObject.addProperty("hash", hashBase64);
             // Save symmetric key as well
@@ -73,18 +75,54 @@ public class CryptoLibrary {
 
     }
 
-    public static void unprotect() {
-
+    public static void unprotect(String file) throws Exception{
+        final String filename = file;
+        // Read  MediTrack JSON object from file, and print its contents
+        try (FileReader fileReader = new FileReader(filename)) {
+            Gson gson = new Gson();
+            JsonObject rootJson = gson.fromJson(fileReader, JsonObject.class);
+            System.out.println("JSON object: " + rootJson);
+            JsonObject patientObject = rootJson.get("patient").getAsJsonObject();
+            JsonObject finalFileObject = new JsonObject();
+            JsonObject decryptedFileObject = new JsonObject();
+            String[] aes_fields = {"name","sex", "consultationRecords"};
+            String[] rsa_fields = {"dateOfBirth","bloodType","knownAllergies"};
+            // Add management of keys
+            KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+		    keyGen.init(128);
+		    Key key = keyGen.generateKey();
+            for (String field: aes_fields)
+            {   
+                byte[] bytes = null;
+                if (field.equals("consultationRecords")) {
+                    bytes = gson.toJson(patientObject.get(field)).getBytes();
+                }
+                else {
+                    bytes = patientObject.get(field).getAsString().getBytes();
+                }
+                byte[] decryptedBase64 = Base64.getDecoder().decode(bytes);
+                byte[] decryptedBytes = aes_decrypt(decryptedBase64,key);
+                decryptedFileObject.addProperty(field, new String(decryptedBytes));
+            }
+            KeyPairGenerator keyGenRSA = KeyPairGenerator.getInstance("RSA");
+            keyGenRSA.initialize(2048);
+            // Server's key
+            KeyPair keyPair = keyGenRSA.generateKeyPair();
+            for (String field: rsa_fields)
+            {   
+                byte[] bytes = patientObject.get(field).getAsString().getBytes();
+                byte[] decryptedBase64 = Base64.getDecoder().decode(bytes);
+                byte[] decryptedBytes = rsa_decrypt(decryptedBase64,keyPair.getPrivate());
+                decryptedFileObject.addProperty(field, new String (decryptedBytes));
+            }
+        }
     }
 
 
     // --------------------------------------------------------------------------------------------
     //  Utilities
     // --------------------------------------------------------------------------------------------
-    public static byte[] aes_encrypt(byte[] bytes) throws Exception{
-        KeyGenerator keyGen = KeyGenerator.getInstance("AES");
-		keyGen.init(128);
-		Key key = keyGen.generateKey();
+    public static byte[] aes_encrypt(byte[] bytes, Key key) throws Exception{
         // cipher data
         final String CIPHER_ALGO = "AES/ECB/PKCS5Padding";
         System.out.println("Ciphering with " + CIPHER_ALGO + "...");
@@ -94,20 +132,17 @@ public class CryptoLibrary {
         return cipherBytes;
     }
 
-    public static byte[] rsa_encrypt(byte[] bytes) throws Exception{
-        KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-		keyGen.initialize(2048);
-		KeyPair keyPair = keyGen.generateKeyPair();
+    public static byte[] aes_decrypt(byte[] bytes, Key key) throws Exception{
         // cipher data
-        final String CIPHER_ALGO = "RSA/ECB/PKCS1Padding";
+        final String CIPHER_ALGO = "AES/ECB/PKCS5Padding";
         System.out.println("Ciphering with " + CIPHER_ALGO + "...");
         Cipher cipher = Cipher.getInstance(CIPHER_ALGO);
-        cipher.init(Cipher.ENCRYPT_MODE, keyPair.getPublic());
-        byte[] cipherBytes = cipher.doFinal(bytes);
-        return cipherBytes;
+        cipher.init(Cipher.DECRYPT_MODE, key);
+        byte[] decipheredBytes = cipher.doFinal(bytes);
+        return decipheredBytes;
     }
 
-    public static byte[] rsa_encrypt(byte[] bytes, Key key) throws Exception{
+    public static byte[] rsa_encrypt_public(byte[] bytes, Key key) throws Exception{
         // cipher data
         final String CIPHER_ALGO = "RSA/ECB/PKCS1Padding";
         System.out.println("Ciphering with " + CIPHER_ALGO + "...");
@@ -116,6 +151,26 @@ public class CryptoLibrary {
         byte[] cipherBytes = cipher.doFinal(bytes);
         return cipherBytes;
     }
+
+    public static byte[] rsa_encrypt_private(byte[] bytes, Key key) throws Exception{
+        // cipher data
+        final String CIPHER_ALGO = "RSA/ECB/PKCS1Padding";
+        System.out.println("Ciphering with " + CIPHER_ALGO + "...");
+        Cipher cipher = Cipher.getInstance(CIPHER_ALGO);
+        cipher.init(Cipher.ENCRYPT_MODE, key);
+        byte[] cipherBytes = cipher.doFinal(bytes);
+        return cipherBytes;
+    }
+
+    public static byte[] rsa_decrypt(byte[] bytes, Key key) throws Exception{
+        // cipher data
+        final String CIPHER_ALGO = "RSA/ECB/PKCS1Padding";
+        System.out.println("Ciphering with " + CIPHER_ALGO + "...");
+        Cipher cipher = Cipher.getInstance(CIPHER_ALGO);
+        cipher.init(Cipher.DECRYPT_MODE, key);
+        byte[] decipheredBytes = cipher.doFinal(bytes);
+        return decipheredBytes;
+    }    
 
 
 
