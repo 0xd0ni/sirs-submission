@@ -14,46 +14,70 @@ public class MediTrack
     private static String userPublicKeyPath = "../keys/user.pubkey";
     // Paths relative to pom.xml
     
-    public static void main( String[] args )
+    public static void main(String[] args )
     {
-        if (args.length == 2 && args[0].equals("check")){
-            System.out.println("Checking file " + args[1]);
-            // Decode from Base64
-            // Decrypt with private key
-            // Recreate Digest
-            // Compare Digest
-        }
-        else if (args.length == 3) {
-            if (args[0].equals("protect")) {
-                System.out.println("Protecting file " + args[1] + " to " + args[2]);
-                try {
-                    Key serverPrivate = CryptoLibrary.readPrivateKey(serverPrivateKeyPath);
-                    Key userPublic = CryptoLibrary.readPublicKey(userPublicKeyPath);
-                    CryptoLibrary.protect(args[1], args[2], serverPrivate, userPublic);
-                } catch (Exception e) {
-                    System.out.println("Error protecting file: " + e);
+        String inputFile = args[1];
+        String outputFile = args.length == 3 ? args[2] : null;
+
+        switch(args[0]) {
+
+            case "protect":
+                if(args.length == 3) {
+                    System.out.println("[MediTrack - protect]: Protecting file " + inputFile + " to " + outputFile);
+                      try {
+                        Key serverPrivate = CryptoLibrary.readPrivateKey(serverPrivateKeyPath);
+                        Key userPublic = CryptoLibrary.readPublicKey(userPublicKeyPath);
+                        CryptoLibrary.protect(inputFile, outputFile, serverPrivate, userPublic);
+                    } catch (Exception e) {
+                        System.out.println("Error protecting file: " + e);
+                    }     
+                } else {
+                    printUsage();
                 }
-            } else if (args[0].equals("unprotect")) {
-                System.out.println("Unprotecting file " + args[1] + " to " + args[2]);
-                try {
-                    Key serverPublic = CryptoLibrary.readPublicKey(serverPublicKeyPath);
-                    Key userPrivate = CryptoLibrary.readPrivateKey(userPrivateKeyPath);
-                    CryptoLibrary.unprotect(args[1], args[2], serverPublic, userPrivate);
-                } catch (Exception e) {
-                    System.out.println("Error unprotecting file: " + e);
+                break;
+
+            case "check":
+                if(args.length == 2) {
+                    System.out.println("[MediTrack - check]: Verifying the integrity and status of the document...");
+                    try {
+                        Key serverPublic = CryptoLibrary.readPublicKey(serverPublicKeyPath);
+                        Key userPrivate = CryptoLibrary.readPrivateKey(userPrivateKeyPath);
+                        CryptoLibrary.check(inputFile, serverPublic, userPrivate);
+
+                    } catch(Exception e) {
+                        System.out.println("Error checking file: " + e);
+                    }    
+                } else  {
+                    printUsage();
                 }
-            } else {
+                break;
+    
+            case "unprotect":
+                if(args.length == 3) {
+                    System.out.println("[MediTrack - unprotect]: Unprotecting file " + inputFile + "to" + outputFile);
+                    try {
+                        Key serverPublic = CryptoLibrary.readPublicKey(serverPublicKeyPath);
+                        Key userPrivate = CryptoLibrary.readPrivateKey(userPrivateKeyPath);
+                        CryptoLibrary.unprotect(inputFile, outputFile, serverPublic, userPrivate);
+                    } catch(Exception e) {
+                        System.out.println("Error unprotecting file " + e);
+                    }
+                } else {
+                    printUsage();
+                }
+                break;
+            
+            default:
                 printUsage();
-            }
-        } else {
-            printUsage();
+                break;
         }
     }
 
     public static void printUsage() {
         System.out.println("Usage:");
-        System.out.println("protect *filename*");
-        System.out.println("unprotect *filename*");
-        System.out.println("check *filename*");
+        System.out.println("    protect (input-file) (output-file)");
+        System.out.println("    unprotect (input-file) (output-file)");
+        System.out.println("    check (input-file) ");
+
     }
 }
