@@ -2,17 +2,16 @@ package main.java.pt.tecnico.a01;
 
 import main.java.pt.tecnico.a01.cryptography.CryptoLibrary;
 import java.security.Key;
-/**
- * Hello world!
- *
- */
+
+
 public class MediTrack
 {
+    // Paths relative to pom.xml
     private static String serverPrivateKeyPath = "../keys/server.privkey";
     private static String serverPublicKeyPath = "../keys/server.pubkey";
     private static String userPrivateKeyPath = "../keys/user.privkey";
     private static String userPublicKeyPath = "../keys/user.pubkey";
-    // Paths relative to pom.xml
+    
     
     public static void main(String[] args )
     {
@@ -36,6 +35,21 @@ public class MediTrack
                 }
                 break;
 
+            case "unprotect":
+                if(args.length == 3) {
+                    System.out.println("[MediTrack - unprotect]: Unprotecting file " + inputFile + "to" + outputFile);
+                    try {
+                        Key serverPublic = CryptoLibrary.readPublicKey(serverPublicKeyPath);
+                        Key userPrivate = CryptoLibrary.readPrivateKey(userPrivateKeyPath);
+                        CryptoLibrary.unprotect(inputFile, outputFile, serverPublic, userPrivate);
+                    } catch(Exception e) {
+                        System.out.println("Error unprotecting file " + e);
+                    }
+                } else {
+                    printUsage();
+                }
+                break;
+                
             case "check":
                 if(args.length == 2) {
                     System.out.println("[MediTrack - check]: Verifying the integrity and status of the document...");
@@ -48,21 +62,6 @@ public class MediTrack
                         System.out.println("Error checking file: " + e);
                     }    
                 } else  {
-                    printUsage();
-                }
-                break;
-    
-            case "unprotect":
-                if(args.length == 3) {
-                    System.out.println("[MediTrack - unprotect]: Unprotecting file " + inputFile + "to" + outputFile);
-                    try {
-                        Key serverPublic = CryptoLibrary.readPublicKey(serverPublicKeyPath);
-                        Key userPrivate = CryptoLibrary.readPrivateKey(userPrivateKeyPath);
-                        CryptoLibrary.unprotect(inputFile, outputFile, serverPublic, userPrivate);
-                    } catch(Exception e) {
-                        System.out.println("Error unprotecting file " + e);
-                    }
-                } else {
                     printUsage();
                 }
                 break;
