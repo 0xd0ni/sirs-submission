@@ -8,6 +8,8 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.time.Instant;
+
 import javax.crypto.spec.SecretKeySpec;
 
 import javax.crypto.Cipher;
@@ -82,6 +84,11 @@ public class CryptoLibrary {
             String encryptedBase64 = Base64.getEncoder().encodeToString(encryptedBytes);
             metadataObject.addProperty("key", encryptedBase64);
 
+            byte[] freshnessBytes = Instant.now().toString().getBytes();
+            byte[] encryptedFreshness = rsa_encrypt_private(freshnessBytes, serverPrivate);
+            String freshnessEncoded = Base64.getEncoder().encodeToString(encryptedFreshness);
+            metadataObject.addProperty("refreshToken", freshnessEncoded);
+
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(gson.toJson(encryptedFileObject).getBytes("UTF-8"));
             byte[] encryptedHash = rsa_encrypt_private(hash, serverPrivate);
@@ -146,6 +153,9 @@ public class CryptoLibrary {
     // --------------------------------------------------------------------------------------------
     //  Utilities
     // --------------------------------------------------------------------------------------------
+
+    // TODO: freshness Utilities
+
     public static byte[] aes_encrypt(byte[] bytes, Key key) throws Exception{
         // cipher data
         final String CIPHER_ALGO = "AES/ECB/PKCS5Padding";
