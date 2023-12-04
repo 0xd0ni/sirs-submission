@@ -24,9 +24,12 @@ import com.google.gson.JsonObject;
 
 public class CryptoLibrary {
 
+
+
 	// mapping of cryptographic algorithms and correspondent MediTrack field
 	public static final String[] AES_FIELDS = {"name", "sex", "consultationRecords"};
 	public static final String[] RSA_FIELDS = {"dateOfBirth", "bloodType", "knownAllergies"};
+
 
     // --------------------------------------------------------------------------------------------
     //  Main operations
@@ -34,7 +37,6 @@ public class CryptoLibrary {
 
     public static void protect(String inputFile, String outputFile, Key serverPrivate, Key userPulic) throws Exception {
 
-        // Read  MediTrack JSON object from file, and print its contents
         try (FileReader fileReader = new FileReader(inputFile)) {
             Gson gson = new Gson();
             JsonObject rootJson = gson.fromJson(fileReader, JsonObject.class);
@@ -45,8 +47,8 @@ public class CryptoLibrary {
 
             // Add management of keys
             KeyGenerator keyGen = KeyGenerator.getInstance("AES");
-		    		keyGen.init(128);
-		    		Key key = keyGen.generateKey();
+		    keyGen.init(128);
+		    Key key = keyGen.generateKey();
             for (String field: AES_FIELDS)
             {
                 byte[] bytes = null;
@@ -62,7 +64,13 @@ public class CryptoLibrary {
             }
             for (String field: RSA_FIELDS)
             {
-                byte[] bytes = patientObject.get(field).getAsString().getBytes();
+                byte[] bytes = null;
+                if(field.equals("knownAllergies")) {
+                    bytes = gson.toJson(patientObject.get(field)).getBytes();
+                }
+                else  {
+                    bytes = patientObject.get(field).getAsString().getBytes();
+                }
                 byte[] encryptedBytes = rsa_encrypt_public(bytes,userPulic);
                 String encryptedBase64 = Base64.getEncoder().encodeToString(encryptedBytes);
                 encryptedFileObject.addProperty(field, encryptedBase64);
