@@ -24,28 +24,31 @@ import com.google.gson.JsonObject;
 
 public class CryptoLibrary {
 
+	// mapping of cryptographic algorithms and correspondent MediTrack field
+	public static final String[] AES_FIELDS = {"name", "sex", "consultationRecords"};
+	public static final String[] RSA_FIELDS = {"dateOfBirth", "bloodType", "knownAllergies"};
 
     // --------------------------------------------------------------------------------------------
     //  Main operations
     // --------------------------------------------------------------------------------------------
-    
-    public static void protect(String inputFilename, String outputFilename, Key serverPrivate, Key userPulic) throws Exception{
+
+    public static void protect(String inputFile, String outputFile, Key serverPrivate, Key userPulic) throws Exception {
+
         // Read  MediTrack JSON object from file, and print its contents
-        try (FileReader fileReader = new FileReader(inputFilename)) {
+        try (FileReader fileReader = new FileReader(inputFile)) {
             Gson gson = new Gson();
             JsonObject rootJson = gson.fromJson(fileReader, JsonObject.class);
             System.out.println("JSON object: " + rootJson);
             JsonObject patientObject = rootJson.get("patient").getAsJsonObject();
             JsonObject finalFileObject = new JsonObject();
             JsonObject encryptedFileObject = new JsonObject();
-            String[] aes_fields = {"name","sex", "consultationRecords"};
-            String[] rsa_fields = {"dateOfBirth","bloodType","knownAllergies"};
+
             // Add management of keys
             KeyGenerator keyGen = KeyGenerator.getInstance("AES");
-		    keyGen.init(128);
-		    Key key = keyGen.generateKey();
-            for (String field: aes_fields)
-            {   
+		    		keyGen.init(128);
+		    		Key key = keyGen.generateKey();
+            for (String field: AES_FIELDS)
+            {
                 byte[] bytes = null;
                 if (field.equals("consultationRecords")) {
                     bytes = gson.toJson(patientObject.get(field)).getBytes();
@@ -57,8 +60,8 @@ public class CryptoLibrary {
                 String encryptedBase64 = Base64.getEncoder().encodeToString(encryptedBytes);
                 encryptedFileObject.addProperty(field, encryptedBase64);
             }
-            for (String field: rsa_fields)
-            {   
+            for (String field: RSA_FIELDS)
+            {
                 byte[] bytes = patientObject.get(field).getAsString().getBytes();
                 byte[] encryptedBytes = rsa_encrypt_public(bytes,userPulic);
                 String encryptedBase64 = Base64.getEncoder().encodeToString(encryptedBytes);
@@ -77,7 +80,7 @@ public class CryptoLibrary {
             finalFileObject.addProperty("hash", hashBase64);
             finalFileObject.add("payload", encryptedFileObject);
 
-            try (FileWriter fileWriter = new FileWriter(outputFilename)) {
+            try (FileWriter fileWriter = new FileWriter(outputFile)) {
                 gson = new GsonBuilder().setPrettyPrinting().create();
                 gson.toJson(finalFileObject, fileWriter);
             }
@@ -86,28 +89,26 @@ public class CryptoLibrary {
     }
 
 
-    public static void check(String inputFilename, Key serverPublic, Key userPrivate) {
+    public static void check(String inputFile, Key serverPublic, Key userPrivate) {
 
     }
 
-    public static void unprotect(String inputFilename, String outputFilename, Key serverPublic, Key userPrivate) throws Exception{
+    public static void unprotect(String inputFile, String outputFile, Key serverPublic, Key userPrivate) throws Exception{
         // Read  MediTrack JSON object from file, and print its contents
-        try (FileReader fileReader = new FileReader(inputFilename)) {
+        try (FileReader fileReader = new FileReader(inputFile)) {
             Gson gson = new Gson();
             JsonObject rootJson = gson.fromJson(fileReader, JsonObject.class);
             System.out.println("JSON object: " + rootJson);
             JsonObject payloadObject = rootJson.get("payload").getAsJsonObject();
             JsonObject decryptedFileObject = new JsonObject();
-            String[] aes_fields = {"name","sex", "consultationRecords"};
-            String[] rsa_fields = {"dateOfBirth","bloodType","knownAllergies"};
 
             String base64 = rootJson.get("key").getAsString();
             byte[] encryptedKey = Base64.getDecoder().decode(base64);
             byte[] decryptedKey = rsa_decrypt(encryptedKey, userPrivate);
             Key key = new SecretKeySpec(decryptedKey, 0, decryptedKey.length, "AES");
             // Add management of keys
-            for (String field: aes_fields)
-            {   
+            for (String field: AES_FIELDS)
+            {
                 byte[] bytes = null;
                 if (field.equals("consultationRecords")) {
                     bytes = gson.toJson(payloadObject.get(field)).getBytes();
@@ -119,8 +120,8 @@ public class CryptoLibrary {
                 byte[] decryptedBytes = aes_decrypt(decryptedBase64,key);
                 decryptedFileObject.addProperty(field, new String(decryptedBytes));
             }
-            for (String field: rsa_fields)
-            {   
+            for (String field: RSA_FIELDS)
+            {
                 byte[] bytes = payloadObject.get(field).getAsString().getBytes();
                 byte[] decryptedBase64 = Base64.getDecoder().decode(bytes);
                 byte[] decryptedBytes = rsa_decrypt(decryptedBase64, userPrivate);
@@ -181,7 +182,7 @@ public class CryptoLibrary {
         cipher.init(Cipher.DECRYPT_MODE, key);
         byte[] decipheredBytes = cipher.doFinal(bytes);
         return decipheredBytes;
-    }    
+    }
 
     public static byte[] readFile(String filename) throws Exception {
         File file = new File(filename);
