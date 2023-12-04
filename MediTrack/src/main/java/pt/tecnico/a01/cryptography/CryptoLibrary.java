@@ -44,6 +44,7 @@ public class CryptoLibrary {
             JsonObject patientObject = rootJson.get("patient").getAsJsonObject();
             JsonObject finalFileObject = new JsonObject();
             JsonObject encryptedFileObject = new JsonObject();
+            JsonObject metadataObject = new JsonObject();
 
             // Add management of keys
             KeyGenerator keyGen = KeyGenerator.getInstance("AES");
@@ -79,14 +80,17 @@ public class CryptoLibrary {
             byte[] bytes = key.getEncoded();
             byte[] encryptedBytes = rsa_encrypt_public(bytes,userPulic);
             String encryptedBase64 = Base64.getEncoder().encodeToString(encryptedBytes);
-            finalFileObject.addProperty("key", encryptedBase64);
+            metadataObject.addProperty("key", encryptedBase64);
 
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(gson.toJson(encryptedFileObject).getBytes("UTF-8"));
             byte[] encryptedHash = rsa_encrypt_private(hash, serverPrivate);
             String hashBase64 = Base64.getEncoder().encodeToString(encryptedHash);
-            finalFileObject.addProperty("hash", hashBase64);
-            finalFileObject.add("payload", encryptedFileObject);
+            metadataObject.addProperty("hash", hashBase64);
+
+
+            finalFileObject.add("record", encryptedFileObject);
+            finalFileObject.add("metadata", metadataObject);
 
             try (FileWriter fileWriter = new FileWriter(outputFile)) {
                 gson = new GsonBuilder().setPrettyPrinting().create();
