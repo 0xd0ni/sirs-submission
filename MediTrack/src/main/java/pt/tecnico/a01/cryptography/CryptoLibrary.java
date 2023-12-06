@@ -35,8 +35,13 @@ public class CryptoLibrary {
 	public static final String[] AES_FIELDS = {"name", "sex", "consultationRecords"};
 	public static final String[] RSA_FIELDS = {"dateOfBirth", "bloodType", "knownAllergies"};
     
+    // TODO:
     // to remove later (a rather small workaround)
     public static final String[] AES_FIELDS_S = {"name", "sex"};
+
+    // it is not necessary to create a new Gson instance for each operation
+    // we can share an instance and let methods reuse it  
+    public static Gson gson = new Gson();
 
     // --------------------------------------------------------------------------------------------
     //  Main operations
@@ -45,10 +50,6 @@ public class CryptoLibrary {
     public static void protect(String inputFile, String outputFile, Key serverPrivate, Key userPulic) throws Exception {
 
         try (FileReader fileReader = new FileReader(inputFile)) {
-            
-            // TODO: share the Gson instance across class
-            //  a little bit of extra performance.
-            Gson gson = new Gson();
             JsonObject rootJson = gson.fromJson(fileReader, JsonObject.class);
             System.out.println("JSON object: " + rootJson);
             JsonObject patientObject = rootJson.get("patient").getAsJsonObject();
@@ -127,7 +128,6 @@ public class CryptoLibrary {
     public static void unprotect(String inputFile, String outputFile, Key serverPublic, Key userPrivate) throws Exception{
         
         try (FileReader fileReader = new FileReader(inputFile)) {
-            Gson gson = new Gson();
             JsonObject rootJson = gson.fromJson(fileReader, JsonObject.class);
             System.out.println("JSON object: " + rootJson);
 
