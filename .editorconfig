@@ -15,4 +15,4 @@ indent_size = 4
 
 [{*.json,*.md}]
 indent_style = space
-indent_size = 4
+indent_size = 2
