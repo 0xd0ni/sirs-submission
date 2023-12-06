@@ -54,9 +54,9 @@ public class MediTrack
                 if(args.length == 2) {
                     System.out.println("[MediTrack - check]: Verifying the integrity and status of the document...");
                     try {
-                        Key serverPublic = CryptoLibrary.readPublicKey(serverPublicKeyPath);
-                        Key userPrivate = CryptoLibrary.readPrivateKey(userPrivateKeyPath);
-                        CryptoLibrary.check(inputFile, serverPublic, userPrivate);
+                        Key serverPrivate = CryptoLibrary.readPrivateKey(serverPrivateKeyPath);
+                        Key userPublic = CryptoLibrary.readPublicKey(userPublicKeyPath);
+                        CryptoLibrary.check(inputFile, serverPrivate, userPublic);
 
                     } catch(Exception e) {
                         System.out.println("Error checking file: " + e);
