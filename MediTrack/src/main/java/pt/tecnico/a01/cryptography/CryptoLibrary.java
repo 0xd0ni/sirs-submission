@@ -121,10 +121,6 @@ public class CryptoLibrary {
     }
 
 
-    public static void check(String inputFile, Key serverPublic, Key userPrivate) {
-
-    }
-
     public static void unprotect(String inputFile, String outputFile, Key serverPublic, Key userPrivate) throws Exception{
         
         try (FileReader fileReader = new FileReader(inputFile)) {
@@ -186,6 +182,67 @@ public class CryptoLibrary {
             }
             
         }
+    }
+
+
+
+    public static void check(String inputFile, Key serverPublic, Key userPrivate) throws Exception {
+
+        try (FileReader fileReader = new FileReader(inputFile)) {
+
+
+            JsonObject rootJson = gson.fromJson(fileReader, JsonObject.class);
+            System.out.println("JSON object: " + rootJson);
+
+            JsonObject recordObject = rootJson.get("record").getAsJsonObject();
+            String hash = rootJson.get("metadata").getAsJsonObject().get("hash").getAsString();
+
+
+            System.out.println("Record Object - " +  recordObject);
+            System.out.println("Encrypted Hash - " + hash);
+
+            // aNOTE:
+            // We're assuming the inputFile is a secured MediTrack record
+
+            /* {
+            "record": {
+                "name": "",
+                "sex": "",
+                "dateOfBirth": "",
+                "bloodType": "",
+                "knownAllergies": ""
+            },
+            "metadata": {
+                "key": "",
+                "refreshToken": "",x0
+                "hash" : ""
+            }
+            } */
+            
+
+            // we need a function that verifies the hash in order to guarantee data integrity
+            // we want to make sure that the MediTrack patient record was not altered by a non-authorized 
+            // party
+            
+            // - first approach ?
+            // how can we do that 
+            // we need the hash 
+            // we need to get the record to its original state and calculate the hash 
+            // compare the stored hash with the existing hash
+
+
+
+             // we need a function that verifies whether or not the refreshToken is fresh 
+             // let's say that we want to compare the refreshToken with a pre determined 
+             // time range
+             // if the refreshToken is within the pre determined time range
+             // the record is fresh 
+             // -- ? 
+             // the record is not fresh
+
+        
+        }
+
     }
 
 
