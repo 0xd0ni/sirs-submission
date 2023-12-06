@@ -80,7 +80,7 @@ def read_data_record(path):
 def write_patients_to_file(patients):
     for index, patient in enumerate(patients):
         with open(f"records/MediTrackRecord{index}.json", "w", encoding="utf-8") as patient_data:
-            json.dump(patient, patient_data, indent=4)
+            json.dump(patient, patient_data, indent=2)
 
 
 if __name__ == "__main__":
