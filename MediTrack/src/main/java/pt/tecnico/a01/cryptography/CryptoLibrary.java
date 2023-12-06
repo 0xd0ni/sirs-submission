@@ -102,10 +102,7 @@ public class CryptoLibrary {
             String freshnessEncoded = Base64.getEncoder().encodeToString(encryptedFreshness);
             metadataObject.addProperty("refreshToken", freshnessEncoded);
 
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(gson.toJson(encryptedFileObject).getBytes("UTF-8"));
-            byte[] encryptedHash = rsa_encrypt_private(hash, serverPrivate);
-            String hashBase64 = Base64.getEncoder().encodeToString(encryptedHash);
+            String hashBase64 = digestAndBase64(encryptedFileObject, serverPrivate);
             metadataObject.addProperty("hash", hashBase64);
 
 
@@ -146,26 +143,29 @@ public class CryptoLibrary {
     }
 
 
-
-    public static void check(String inputFile, Key serverPublic, Key userPrivate) throws Exception {
+    // NOTE:
+    // We're assuming the inputFile is a secured MediTrack record
+    public static void check(String inputFile, Key serverPrivate, Key userPublic) throws Exception {
 
         try (FileReader fileReader = new FileReader(inputFile)) {
-
-
             JsonObject rootJson = gson.fromJson(fileReader, JsonObject.class);
             System.out.println("JSON object: " + rootJson);
 
             JsonObject recordObject = rootJson.get("record").getAsJsonObject();
-            String encryptedHash = rootJson.get("metadata").getAsJsonObject().get("hash").getAsString();
+            String storedHashBase64 = rootJson.get("metadata").getAsJsonObject().get("hash").getAsString();
+            String keyBase64 =  rootJson.get("metadata").getAsJsonObject().get("key").getAsString();
 
-        
-            System.out.println("Record Object - " +  recordObject);
-            System.out.println("Encrypted Hash - " + encryptedHash);
+            
+            // obtain the encrypted hash of the record object in base 64
+            String computedHashBase64 = digestAndBase64(recordObject, serverPrivate);
 
-
-
-            // NOTE:
-            // We're assuming the inputFile is a secured MediTrack record
+            // TODO: 
+            // explain why we compared byte[] instead of base64 Strings
+            if(!compareBase64Hashes(storedHashBase64,computedHashBase64)) {
+                System.out.println("[MediTrack]: The patient record was modified, status=lacks integrity");
+            } else {
+                System.out.println("[MediTrack]: The patient record was not modified, status=integrity");
+            }
 
             /* {
             "record": {
@@ -182,19 +182,6 @@ public class CryptoLibrary {
             }
             } */
             
-
-            // we need a function that verifies the hash in order to guarantee data integrity
-            // we want to make sure that the MediTrack patient record was not altered by a non-authorized 
-            // party
-            
-            // - first approach ?
-            // how can we do that 
-            // we need the hash 
-            // we need to get the record to its original state and calculate the hash 
-            // compare the stored hash with the existing hash
-
-
-
              // we need a function that verifies whether or not the refreshToken is fresh 
              // let's say that we want to compare the refreshToken with a pre determined 
              // time range
@@ -292,6 +279,22 @@ public class CryptoLibrary {
     }
 
 
+    public static boolean compareBase64Hashes(String base64Hash1, String base64Hash2) {
+        byte[] decodedHash1 = Base64.getDecoder().decode(base64Hash1);
+        byte[] decodedHash2 = Base64.getDecoder().decode(base64Hash2);
+    
+        return MessageDigest.isEqual(decodedHash1, decodedHash2);
+    }
+
+    public static String digestAndBase64(JsonObject recordObject,Key serverPrivate) throws Exception {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] hash = digest.digest(gson.toJson(recordObject).getBytes("UTF-8"));
+        byte[] encryptedHash = rsa_encrypt_private(hash, serverPrivate);
+        String hashBase64 = Base64.getEncoder().encodeToString(encryptedHash);
+
+        return hashBase64;     
+    }
+
     public static JsonObject getDecryptedMediTrackRecord(String keyBase64, JsonObject recordObject, Key userPrivate) throws Exception {
 
             JsonObject decryptedMediTRackRecordObject = new JsonObject();
@@ -338,6 +341,5 @@ public class CryptoLibrary {
             return decryptedMediTRackRecordObject;
             
     }
-
 
 }
