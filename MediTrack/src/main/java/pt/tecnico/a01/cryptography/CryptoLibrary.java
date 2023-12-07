@@ -35,8 +35,11 @@ public class CryptoLibrary {
 	public static final String[] AES_FIELDS = {"name", "sex", "consultationRecords"};
 	public static final String[] RSA_FIELDS = {"dateOfBirth", "bloodType", "knownAllergies"};
 
+
     // TODO:
-    // to remove later (a rather small workaround)f
+    // to remove later (a rather small workaround)
+    public static final String[] AES_FIELDS_S = {"name", "sex"};
+    
     // we can share an instance and let methods reuse it
     public static Gson gson = new Gson();
 
