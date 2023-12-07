@@ -34,13 +34,13 @@ public class CryptoLibrary {
 	// mapping of cryptographic algorithms and correspondent MediTrack field
 	public static final String[] AES_FIELDS = {"name", "sex", "consultationRecords"};
 	public static final String[] RSA_FIELDS = {"dateOfBirth", "bloodType", "knownAllergies"};
-    
+
     // TODO:
     // to remove later (a rather small workaround)
     public static final String[] AES_FIELDS_S = {"name", "sex"};
 
     // it is not necessary to create a new Gson instance for each operation
-    // we can share an instance and let methods reuse it  
+    // we can share an instance and let methods reuse it
     public static Gson gson = new Gson();
 
     // --------------------------------------------------------------------------------------------
@@ -53,10 +53,10 @@ public class CryptoLibrary {
             JsonObject rootJson = gson.fromJson(fileReader, JsonObject.class);
             System.out.println("JSON object: " + rootJson);
             JsonObject patientObject = rootJson.get("patient").getAsJsonObject();
-            JsonObject finalFileObject = new JsonObject();
+            JsonObject finalFileObject = new JsonObject();67
             JsonObject encryptedFileObject = new JsonObject();
             JsonObject metadataObject = new JsonObject();
-            
+
             KeyGenerator keyGen = KeyGenerator.getInstance("AES");
 		    keyGen.init(128);
 		    Key key = keyGen.generateKey();
@@ -81,7 +81,7 @@ public class CryptoLibrary {
                 if(field.equals("knownAllergies")) {
                     JsonArray knownAllergiesArray = patientObject.get(field).getAsJsonArray();
                     bytes = knownAllergiesArray.toString().getBytes();
-            
+
                 }
                 else {
                     bytes = patientObject.get(field).getAsString().getBytes();
@@ -89,16 +89,16 @@ public class CryptoLibrary {
                 byte[] encryptedBytes = rsa_encrypt_public(bytes,userPulic);
                 String encryptedBase64 = Base64.getEncoder().encodeToString(encryptedBytes);
                 encryptedFileObject.addProperty(field, encryptedBase64);
-                    
+
             }
-            
+
             byte[] bytes = key.getEncoded();
             byte[] encryptedBytes = rsa_encrypt_public(bytes,userPulic);
             String encryptedBase64 = Base64.getEncoder().encodeToString(encryptedBytes);
             metadataObject.addProperty("key", encryptedBase64);
 
             byte[] freshnessBytes = Instant.now().toString().getBytes();
-            byte[] encryptedFreshness = rsa_encrypt_private(freshnessBytes, serverPrivate);
+            byte[] encryptedFreshness = rsa_encrypt_public(freshnessBytes, userPulic);
             String freshnessEncoded = Base64.getEncoder().encodeToString(encryptedFreshness);
             metadataObject.addProperty("refreshToken", freshnessEncoded);
 
@@ -119,18 +119,18 @@ public class CryptoLibrary {
 
 
     public static void unprotect(String inputFile, String outputFile, Key serverPublic, Key userPrivate) throws Exception{
-        
+
         try (FileReader fileReader = new FileReader(inputFile)) {
             JsonObject rootJson = gson.fromJson(fileReader, JsonObject.class);
             System.out.println("JSON object: " + rootJson);
 
-            
+
             JsonObject recordObject = rootJson.get("record").getAsJsonObject();
             String keyBase64 =  rootJson.get("metadata").getAsJsonObject().get("key").getAsString();
-            
+
             // obtain the decrypted core patient record
             JsonObject decryptedMediTrackRecord = getDecryptedMediTrackRecord(keyBase64,recordObject,userPrivate);
-            
+
             JsonObject patientObject = new JsonObject();
 
             patientObject.add("patient", decryptedMediTrackRecord);
@@ -138,7 +138,7 @@ public class CryptoLibrary {
                 gson = new GsonBuilder().setPrettyPrinting().create();
                 gson.toJson(patientObject, fileWriter);
             }
-            
+
         }
     }
 
@@ -155,11 +155,11 @@ public class CryptoLibrary {
             String storedHashBase64 = rootJson.get("metadata").getAsJsonObject().get("hash").getAsString();
             String keyBase64 =  rootJson.get("metadata").getAsJsonObject().get("key").getAsString();
 
-            
+
             // obtain the encrypted hash of the record object in base 64
             String computedHashBase64 = digestAndBase64(recordObject, serverPrivate);
 
-            // TODO: 
+            // TODO:
             // explain why we compared byte[] instead of base64 Strings
             if(!compareBase64Hashes(storedHashBase64,computedHashBase64)) {
                 System.out.println("[MediTrack]: The patient record was modified, status=lacks integrity");
@@ -181,16 +181,16 @@ public class CryptoLibrary {
                 "hash" : ""
             }
             } */
-            
-             // we need a function that verifies whether or not the refreshToken is fresh 
-             // let's say that we want to compare the refreshToken with a pre determined 
+
+             // we need a function that verifies whether or not the refreshToken is fresh
+             // let's say that we want to compare the refreshToken with a pre determined
              // time range
              // if the refreshToken is within the pre determined time range
-             // the record is fresh 
-             // -- ? 
+             // the record is fresh
+             // -- ?
              // the record is not fresh
 
-        
+
         }
 
     }
@@ -282,7 +282,7 @@ public class CryptoLibrary {
     public static boolean compareBase64Hashes(String base64Hash1, String base64Hash2) {
         byte[] decodedHash1 = Base64.getDecoder().decode(base64Hash1);
         byte[] decodedHash2 = Base64.getDecoder().decode(base64Hash2);
-    
+
         return MessageDigest.isEqual(decodedHash1, decodedHash2);
     }
 
@@ -292,7 +292,7 @@ public class CryptoLibrary {
         byte[] encryptedHash = rsa_encrypt_private(hash, serverPrivate);
         String hashBase64 = Base64.getEncoder().encodeToString(encryptedHash);
 
-        return hashBase64;     
+        return hashBase64;
     }
 
     public static JsonObject getDecryptedMediTrackRecord(String keyBase64, JsonObject recordObject, Key userPrivate) throws Exception {
@@ -304,15 +304,15 @@ public class CryptoLibrary {
             byte[] encryptedKey = Base64.getDecoder().decode(keyBase64);
             byte[] decryptedKey = rsa_decrypt(encryptedKey, userPrivate);
             Key key = new SecretKeySpec(decryptedKey, 0, decryptedKey.length, "AES");
-           
+
             for (String field: AES_FIELDS_S)
             {
                 byte[] bytes = recordObject.get(field).getAsString().getBytes();
                 byte[] decryptedBase64 = Base64.getDecoder().decode(bytes);
                 byte[] decryptedBytes = aes_decrypt(decryptedBase64,key);
                 decryptedMediTRackRecordObject.addProperty(field, new String(decryptedBytes));
-                 
-            } 
+
+            }
             for (String field: RSA_FIELDS)
             {
                 byte[] bytes = recordObject.get(field).getAsString().getBytes();
@@ -326,7 +326,7 @@ public class CryptoLibrary {
 
                 } else {
                     decryptedMediTRackRecordObject.addProperty(field, new String (decryptedBytes));
-                }    
+                }
             }
 
             // workaround such that the order of the unprotected record matches the original
@@ -339,7 +339,7 @@ public class CryptoLibrary {
             decryptedMediTRackRecordObject.add("consultationRecords",gson.toJsonTree(consultationRecords));
 
             return decryptedMediTRackRecordObject;
-            
+
     }
 
 }
