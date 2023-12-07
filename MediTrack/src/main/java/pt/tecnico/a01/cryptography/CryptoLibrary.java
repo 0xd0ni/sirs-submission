@@ -43,6 +43,9 @@ public class CryptoLibrary {
     // we can share an instance and let methods reuse it
     public static Gson gson = new Gson();
 
+    // 1 minute 
+    private static final long FRESHNESS_RANGE = 60000;
+
     // --------------------------------------------------------------------------------------------
     //  Main operations
     // --------------------------------------------------------------------------------------------
@@ -145,51 +148,36 @@ public class CryptoLibrary {
 
     // NOTE:
     // We're assuming the inputFile is a secured MediTrack record
-    public static void check(String inputFile, Key serverPrivate, Key userPublic) throws Exception {
+    public static void check(String inputFile, Key serverPrivate, Key userPrivate) throws Exception {
 
         try (FileReader fileReader = new FileReader(inputFile)) {
             JsonObject rootJson = gson.fromJson(fileReader, JsonObject.class);
             System.out.println("JSON object: " + rootJson);
 
             JsonObject recordObject = rootJson.get("record").getAsJsonObject();
+
             String storedHashBase64 = rootJson.get("metadata").getAsJsonObject().get("hash").getAsString();
-            String keyBase64 =  rootJson.get("metadata").getAsJsonObject().get("key").getAsString();
-
-
-            // obtain the encrypted hash of the record object in base 64
             String computedHashBase64 = digestAndBase64(recordObject, serverPrivate);
 
-            // TODO:
-            // explain why we compared byte[] instead of base64 Strings
+            String refreshTokenBase64 = rootJson.get("metadata").getAsJsonObject().get("refreshToken").getAsString();
+            String refreshToken =  getRefreshToken(refreshTokenBase64, userPrivate);
+
+          
+            // Check if the storedHash is identical to the computedHash.
+            // The computedHash is derived from hashing the record object.
             if(!compareBase64Hashes(storedHashBase64,computedHashBase64)) {
-                System.out.println("[MediTrack]: The patient record was modified, status=lacks integrity");
+                System.out.println("[MediTrack (check)]: The patient record was modified");
             } else {
-                System.out.println("[MediTrack]: The patient record was not modified, status=integrity");
+                System.out.println("[MediTrack (check)]: The patient record was not modified");
             }
 
-            /* {
-            "record": {
-                "name": "",
-                "sex": "",
-                "dateOfBirth": "",
-                "bloodType": "",
-                "knownAllergies": ""
-            },
-            "metadata": {
-                "key": "",
-                "refreshToken": "",x0
-                "hash" : ""
+            
+            // Check if the refreshToken is within the accepable freshness interval
+            if(!compareRefreshTokenInterval(refreshToken,FRESHNESS_RANGE)) {
+                System.out.println("[MediTrack (check)]: The patient record is not fresh, and should not be used.");  
+            } else {
+                 System.out.println("[MediTrack (check)]: The patient record is fresh, and can be used");     
             }
-            } */
-
-             // we need a function that verifies whether or not the refreshToken is fresh
-             // let's say that we want to compare the refreshToken with a pre determined
-             // time range
-             // if the refreshToken is within the pre determined time range
-             // the record is fresh
-             // -- ?
-             // the record is not fresh
-
 
         }
 
@@ -199,8 +187,6 @@ public class CryptoLibrary {
     // --------------------------------------------------------------------------------------------
     //  Utilities
     // --------------------------------------------------------------------------------------------
-
-    // TODO: freshness Utilities
 
     public static byte[] aes_encrypt(byte[] bytes, Key key) throws Exception{
         // cipher data
@@ -212,6 +198,7 @@ public class CryptoLibrary {
         return cipherBytes;
     }
 
+
     public static byte[] aes_decrypt(byte[] bytes, Key key) throws Exception{
         // cipher data
         final String CIPHER_ALGO = "AES/ECB/PKCS5Padding";
@@ -221,6 +208,7 @@ public class CryptoLibrary {
         byte[] decipheredBytes = cipher.doFinal(bytes);
         return decipheredBytes;
     }
+
 
     public static byte[] rsa_encrypt_public(byte[] bytes, Key key) throws Exception{
         // cipher data
@@ -232,6 +220,7 @@ public class CryptoLibrary {
         return cipherBytes;
     }
 
+
     public static byte[] rsa_encrypt_private(byte[] bytes, Key key) throws Exception{
         // cipher data
         final String CIPHER_ALGO = "RSA/ECB/PKCS1Padding";
@@ -241,6 +230,7 @@ public class CryptoLibrary {
         byte[] cipherBytes = cipher.doFinal(bytes);
         return cipherBytes;
     }
+
 
     public static byte[] rsa_decrypt(byte[] bytes, Key key) throws Exception{
         // cipher data
@@ -252,6 +242,7 @@ public class CryptoLibrary {
         return decipheredBytes;
     }
 
+
     public static byte[] readFile(String filename) throws Exception {
         File file = new File(filename);
         FileInputStream fis = new FileInputStream(file);
@@ -260,6 +251,7 @@ public class CryptoLibrary {
         fis.close();
         return fileBytes;
     }
+
 
     public static Key readPrivateKey(String filename) throws Exception {
         byte[] privEncoded = readFile(filename);
@@ -278,6 +270,38 @@ public class CryptoLibrary {
         return pub;
     }
 
+    // --------------------------------------------------------------------------------------------
+    //  Utilities - freshness
+    // --------------------------------------------------------------------------------------------
+
+    public static boolean compareRefreshTokenInterval(String refreshToken, long range) {
+        Instant refreshTokenInstant = Instant.parse(refreshToken);
+        Instant current = Instant.now();
+       
+        if(refreshTokenInstant.equals(current)) {
+            return true;
+        } 
+        boolean isWithinBeforeRange = (refreshTokenInstant.isAfter(current.minusMillis(range))
+                                       && refreshTokenInstant.isBefore(current));
+        boolean isWithinAfterRange = (refreshTokenInstant.isAfter(current) 
+                                      && refreshTokenInstant.isBefore(current.plusMillis(range)));
+        
+        return isWithinBeforeRange || isWithinAfterRange;
+    }
+ 
+    
+    public static String getRefreshToken(String freshnessEncoded,Key userPrivate) throws Exception {
+        byte[] decodedRefreshToken = Base64.getDecoder().decode(freshnessEncoded); 
+        byte[] unencryptedRefreshToken = rsa_decrypt(decodedRefreshToken, userPrivate);
+        String refreshToken = new String(unencryptedRefreshToken);
+
+        return refreshToken;
+
+    }
+
+    // --------------------------------------------------------------------------------------------
+    //  Utilities - hashes
+    // --------------------------------------------------------------------------------------------
 
     public static boolean compareBase64Hashes(String base64Hash1, String base64Hash2) {
         byte[] decodedHash1 = Base64.getDecoder().decode(base64Hash1);
@@ -285,6 +309,7 @@ public class CryptoLibrary {
 
         return MessageDigest.isEqual(decodedHash1, decodedHash2);
     }
+
 
     public static String digestAndBase64(JsonObject recordObject,Key serverPrivate) throws Exception {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -294,6 +319,10 @@ public class CryptoLibrary {
 
         return hashBase64;
     }
+
+    // --------------------------------------------------------------------------------------------
+    //  Utilities - misc
+    // --------------------------------------------------------------------------------------------
 
     public static JsonObject getDecryptedMediTrackRecord(String keyBase64, JsonObject recordObject, Key userPrivate) throws Exception {
 
