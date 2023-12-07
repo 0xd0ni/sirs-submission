@@ -36,10 +36,7 @@ public class CryptoLibrary {
 	public static final String[] RSA_FIELDS = {"dateOfBirth", "bloodType", "knownAllergies"};
 
     // TODO:
-    // to remove later (a rather small workaround)
-    public static final String[] AES_FIELDS_S = {"name", "sex"};
-
-    // it is not necessary to create a new Gson instance for each operation
+    // to remove later (a rather small workaround)f
     // we can share an instance and let methods reuse it
     public static Gson gson = new Gson();
 
@@ -47,13 +44,13 @@ public class CryptoLibrary {
     //  Main operations
     // --------------------------------------------------------------------------------------------
 
-    public static void protect(String inputFile, String outputFile, Key serverPrivate, Key userPulic) throws Exception {
+    public static void protect(String inputFile, String outputFile, Key serverPrivate, Key userPublic) throws Exception {
 
         try (FileReader fileReader = new FileReader(inputFile)) {
             JsonObject rootJson = gson.fromJson(fileReader, JsonObject.class);
             System.out.println("JSON object: " + rootJson);
             JsonObject patientObject = rootJson.get("patient").getAsJsonObject();
-            JsonObject finalFileObject = new JsonObject();67
+            JsonObject finalFileObject = new JsonObject();
             JsonObject encryptedFileObject = new JsonObject();
             JsonObject metadataObject = new JsonObject();
 
@@ -86,19 +83,19 @@ public class CryptoLibrary {
                 else {
                     bytes = patientObject.get(field).getAsString().getBytes();
                 }
-                byte[] encryptedBytes = rsa_encrypt_public(bytes,userPulic);
+                byte[] encryptedBytes = rsa_encrypt_public(bytes,userPublic);
                 String encryptedBase64 = Base64.getEncoder().encodeToString(encryptedBytes);
                 encryptedFileObject.addProperty(field, encryptedBase64);
 
             }
 
             byte[] bytes = key.getEncoded();
-            byte[] encryptedBytes = rsa_encrypt_public(bytes,userPulic);
+            byte[] encryptedBytes = rsa_encrypt_public(bytes,userPublic);
             String encryptedBase64 = Base64.getEncoder().encodeToString(encryptedBytes);
             metadataObject.addProperty("key", encryptedBase64);
 
             byte[] freshnessBytes = Instant.now().toString().getBytes();
-            byte[] encryptedFreshness = rsa_encrypt_public(freshnessBytes, userPulic);
+            byte[] encryptedFreshness = rsa_encrypt_public(freshnessBytes, userPublic);
             String freshnessEncoded = Base64.getEncoder().encodeToString(encryptedFreshness);
             metadataObject.addProperty("refreshToken", freshnessEncoded);
 
