@@ -44,7 +44,14 @@ public class CryptoLibrary {
     public static Gson gson = new Gson();
 
     // 1 minute 
-    private static final long FRESHNESS_RANGE = 60000;
+    private static final long FRESHNESS_RANGE = 60000;  
+
+
+    private static final String MESSAGE_PREFIX_CHECK = "[MediTrack (check)]: ";
+    private static final String UNALTERED = "unaltered";
+    private static final String ALTERED = "altered";
+    private static final String FRESH = "fresh";
+    private static final String STALE = "stale";
 
     // --------------------------------------------------------------------------------------------
     //  Main operations
@@ -146,43 +153,26 @@ public class CryptoLibrary {
     }
 
 
-    // NOTE:
-    // We're assuming the inputFile is a secured MediTrack record
     public static void check(String inputFile, Key serverPrivate, Key userPrivate) throws Exception {
 
         try (FileReader fileReader = new FileReader(inputFile)) {
             JsonObject rootJson = gson.fromJson(fileReader, JsonObject.class);
-            System.out.println("JSON object: " + rootJson);
-
             JsonObject recordObject = rootJson.get("record").getAsJsonObject();
 
             String storedHashBase64 = rootJson.get("metadata").getAsJsonObject().get("hash").getAsString();
             String computedHashBase64 = digestAndBase64(recordObject, serverPrivate);
-
             String refreshTokenBase64 = rootJson.get("metadata").getAsJsonObject().get("refreshToken").getAsString();
             String refreshToken =  getRefreshToken(refreshTokenBase64, userPrivate);
-
-          
-            // Check if the storedHash is identical to the computedHash.
-            // The computedHash is derived from hashing the record object.
-            if(!compareBase64Hashes(storedHashBase64,computedHashBase64)) {
-                System.out.println("[MediTrack (check)]: The patient record was modified");
-            } else {
-                System.out.println("[MediTrack (check)]: The patient record was not modified");
-            }
-
             
-            // Check if the refreshToken is within the accepable freshness interval
-            if(!compareRefreshTokenInterval(refreshToken,FRESHNESS_RANGE)) {
-                System.out.println("[MediTrack (check)]: The patient record is not fresh, and should not be used.");  
-            } else {
-                 System.out.println("[MediTrack (check)]: The patient record is fresh, and can be used");     
-            }
+            boolean integrityStatus = compareBase64Hashes(storedHashBase64, computedHashBase64);
+            boolean freshnessStatus = compareRefreshTokenInterval(refreshToken,FRESHNESS_RANGE);
 
+            String statusMessage = String.format("%sstatus= `%s` - `%s`",
+              MESSAGE_PREFIX_CHECK, integrityStatus ? UNALTERED : ALTERED, freshnessStatus ? FRESH : STALE);
+
+            System.out.println(statusMessage);  
         }
-
     }
-
 
     // --------------------------------------------------------------------------------------------
     //  Utilities
