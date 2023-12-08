@@ -1,4 +1,4 @@
-# CXX GrooveGalaxy / BombAppetit / BlingBank / MediTrack Project Report
+# A01 MediTrack Report
 
 ## 1. Introduction
 
@@ -8,9 +8,81 @@
 
 ## 2. Project Development
 
+
 ### 2.1. Secure Document Format
 
 #### 2.1.1. Design
+
+
+Let's first take a look at our core data format
+####  Example
+
+```json
+{
+  "patient": {
+    "name": "Bob",
+    "sex": "Male",
+    "dateOfBirth": "2004-05-15",
+    "bloodType": "A+",
+    "knownAllergies": ["Penicillin"],
+    "consultationRecords": [
+      {
+        "date": "2022-05-15",
+        "medicalSpeciality": "Orthopedic",
+        "doctorName": "Dr. Smith",
+        "practice": "OrthoCare Clinic",
+        "treatmentSummary": "Fractured left tibia; cast applied."
+      },
+      {
+        "date": "2023-04-20",
+        "medicalSpeciality": "Gastroenterology",
+        "doctorName": "Dr. Johnson",
+        "practice": "Digestive Health Center",
+        "treatmentSummary": "Diagnosed with gastritis; prescribed antacids."
+      },
+      {
+        "date": "2023-09-05",
+        "medicalSpeciality": "Dermatology",
+        "doctorName": "Dr. Martins",
+        "practice": "SkinCare Clinic",
+        "treatmentSummary": "Treated for Molluscum Contagiosum; prescribed topical corticosteroids."
+      }
+    ]
+  }
+}
+```
+
+#### Example - secure document format
+
+
+```json
+{
+  "record": {
+    "name": "",
+    "sex": "",
+    "consultationRecords": "",
+    "dateOfBirth": "",
+    "bloodType": "",
+    "knownAllergies": ""
+  },
+  "metadata": {
+    "key": "",
+    "refreshToken": "",
+    "hash": ""
+  }
+}
+
+
+```
+
+TODO:
+1) describe each json objects
+2) describe how the fields of each of the objects relate to the original
+3) describe in detail the security mechanism behind the metadata object;
+4) talk extensively about authenticity and confidentiality
+45 exemplify operations and result
+
+
 
 (_Outline the design of your custom cryptographic library and the rationale behind your design choices, focusing on how it addresses the specific needs of your chosen business scenario._)
 
@@ -52,7 +124,7 @@
 
 (_Explain how your team redesigned and extended the solution to meet the security challenge, including key distribution and other security measures._)
 
-(_Identify communication entities and the messages they exchange with a UML sequence or collaboration diagram._)  
+(_Identify communication entities and the messages they exchange with a UML sequence or collaboration diagram._)
 
 ## 3. Conclusion
 
