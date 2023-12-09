@@ -46,6 +46,17 @@ public class CryptoLibrary {
     // 1 minute 
     private static final long FRESHNESS_RANGE = 60000;  
 
+    private static final String PATIENT = "patient";
+    private static final String CONSULTATION_RECORDS = "consultationRecords";
+    
+    
+    private static final String RECORD = "record";
+    private static final String METADATA = "metadata";
+    private static final String HASH = "hash";
+    private static final String KEY = "key";
+    private static final String REFRESH_TOKEN = "refreshToken";
+    private static final String KNOWN_ALLERGIES = "knownAllergies";
+    
 
     private static final String MESSAGE_PREFIX_CHECK = "[MediTrack (check)]: ";
     private static final String UNALTERED = "unaltered";
@@ -57,121 +68,81 @@ public class CryptoLibrary {
     //  Main operations
     // --------------------------------------------------------------------------------------------
 
+    /**
+     * Protects MediTrack records (sensitive data) by encrypting it using a combination of symmetric 
+     * and asymmetric encryption techniques.
+     * 
+     * This method reads a JSON object from the specified input file and encrypts its contents. It generates a symmetric
+     * encryption key (AES) to encrypt the core data. Additionally, it encrypts metadata related to the patient's record
+     * using the provided public key. The encrypted data is then written to the specified output file.
+     *
+     * @param inputFile     The path of the input file containing the JSON object to be encrypted.
+     * @param outputFile    The path of the output file where the encrypted JSON object will be saved.
+     * @param serverPrivate The private key of the server, used in the encryption process.
+     * @param userPublic    The public key of the user, used to encrypt the metadata.
+     * @throws Exception    If any error occurs during file reading/writing or encryption processes.
+     */
     public static void protect(String inputFile, String outputFile, Key serverPrivate, Key userPublic) throws Exception {
 
-        try (FileReader fileReader = new FileReader(inputFile)) {
-            JsonObject rootJson = gson.fromJson(fileReader, JsonObject.class);
-            System.out.println("JSON object: " + rootJson);
-            JsonObject patientObject = rootJson.get("patient").getAsJsonObject();
-            JsonObject finalFileObject = new JsonObject();
-            JsonObject encryptedFileObject = new JsonObject();
-            JsonObject metadataObject = new JsonObject();
+        JsonObject rootJson = readFileToJsonObject(inputFile);
+        System.out.println("JSON object: " + rootJson);
+        
+        JsonObject protectedRecord = new JsonObject();
 
-            KeyGenerator keyGen = KeyGenerator.getInstance("AES");
-		    keyGen.init(128);
-		    Key key = keyGen.generateKey();
-            for (String field: AES_FIELDS)
-            {
-                byte[] bytes = null;
-                if (field.equals("consultationRecords")) {
-                    JsonArray consultationRecordsArray = patientObject.get(field).getAsJsonArray();
-                    bytes = consultationRecordsArray.toString().getBytes();
-                }
-                else {
-                    bytes = patientObject.get(field).getAsString().getBytes();
-                }
-                byte[] encryptedBytes = aes_encrypt(bytes,key);
-                String encryptedBase64 = Base64.getEncoder().encodeToString(encryptedBytes);
-                encryptedFileObject.addProperty(field, encryptedBase64);
-            }
-            for (String field: RSA_FIELDS)
-            {
-                byte[] bytes = null;
+        // generates a symmetric encryption key 
+        Key key = generateKeyAES();
 
-                if(field.equals("knownAllergies")) {
-                    JsonArray knownAllergiesArray = patientObject.get(field).getAsJsonArray();
-                    bytes = knownAllergiesArray.toString().getBytes();
-
-                }
-                else {
-                    bytes = patientObject.get(field).getAsString().getBytes();
-                }
-                byte[] encryptedBytes = rsa_encrypt_public(bytes,userPublic);
-                String encryptedBase64 = Base64.getEncoder().encodeToString(encryptedBytes);
-                encryptedFileObject.addProperty(field, encryptedBase64);
-
-            }
-
-            byte[] bytes = key.getEncoded();
-            byte[] encryptedBytes = rsa_encrypt_public(bytes,userPublic);
-            String encryptedBase64 = Base64.getEncoder().encodeToString(encryptedBytes);
-            metadataObject.addProperty("key", encryptedBase64);
-
-            byte[] freshnessBytes = Instant.now().toString().getBytes();
-            byte[] encryptedFreshness = rsa_encrypt_public(freshnessBytes, userPublic);
-            String freshnessEncoded = Base64.getEncoder().encodeToString(encryptedFreshness);
-            metadataObject.addProperty("refreshToken", freshnessEncoded);
-
-            String hashBase64 = digestAndBase64(encryptedFileObject, serverPrivate);
-            metadataObject.addProperty("hash", hashBase64);
-
-
-            finalFileObject.add("record", encryptedFileObject);
-            finalFileObject.add("metadata", metadataObject);
-
-            try (FileWriter fileWriter = new FileWriter(outputFile)) {
-                gson = new GsonBuilder().setPrettyPrinting().create();
-                gson.toJson(finalFileObject, fileWriter);
-            }
-            // Save symmetric key as well
-        }
+        // encrypts the core data format
+        JsonObject record = EncryptRecord(rootJson.get(PATIENT).getAsJsonObject(), key, userPublic);
+        // computes and encrypts the metadata linked to the patient's record - (core data format)
+        JsonObject metadata = encryptMetadata(key, userPublic, serverPrivate, record);
+     
+        protectedRecord.add(RECORD,record);
+        protectedRecord.add(METADATA,metadata);
+        
+        writeJsonObjectToFile(protectedRecord,outputFile);
+        
     }
 
 
-    public static void unprotect(String inputFile, String outputFile, Key serverPublic, Key userPrivate) throws Exception{
+    public static void unprotect(String inputFile, String outputFile, Key userPrivate) throws Exception {
+        
+        JsonObject rootJson = readFileToJsonObject(inputFile);
+        System.out.println("JSON object: " + rootJson);
 
-        try (FileReader fileReader = new FileReader(inputFile)) {
-            JsonObject rootJson = gson.fromJson(fileReader, JsonObject.class);
-            System.out.println("JSON object: " + rootJson);
+        JsonObject patientObject = new JsonObject();
+        JsonObject recordObject = rootJson.get(RECORD).getAsJsonObject();
 
+        // explain:
+        String keyBase64 =  rootJson.get(METADATA).getAsJsonObject().get(KEY).getAsString();
 
-            JsonObject recordObject = rootJson.get("record").getAsJsonObject();
-            String keyBase64 =  rootJson.get("metadata").getAsJsonObject().get("key").getAsString();
+        // get the core data format decrypted 
+        JsonObject decryptedRecord = getDecryptedMediTrackRecord(keyBase64,recordObject,userPrivate);
+        patientObject.add(PATIENT, decryptedRecord);
 
-            // obtain the decrypted core patient record
-            JsonObject decryptedMediTrackRecord = getDecryptedMediTrackRecord(keyBase64,recordObject,userPrivate);
-
-            JsonObject patientObject = new JsonObject();
-
-            patientObject.add("patient", decryptedMediTrackRecord);
-            try (FileWriter fileWriter = new FileWriter(outputFile)) {
-                gson = new GsonBuilder().setPrettyPrinting().create();
-                gson.toJson(patientObject, fileWriter);
-            }
-
-        }
+        writeJsonObjectToFile(patientObject, outputFile);
     }
 
 
     public static void check(String inputFile, Key serverPrivate, Key userPrivate) throws Exception {
 
-        try (FileReader fileReader = new FileReader(inputFile)) {
-            JsonObject rootJson = gson.fromJson(fileReader, JsonObject.class);
-            JsonObject recordObject = rootJson.get("record").getAsJsonObject();
+        JsonObject rootJson = readFileToJsonObject(inputFile);
 
-            String storedHashBase64 = rootJson.get("metadata").getAsJsonObject().get("hash").getAsString();
-            String computedHashBase64 = digestAndBase64(recordObject, serverPrivate);
-            String refreshTokenBase64 = rootJson.get("metadata").getAsJsonObject().get("refreshToken").getAsString();
-            String refreshToken =  getRefreshToken(refreshTokenBase64, userPrivate);
-            
-            boolean integrityStatus = compareBase64Hashes(storedHashBase64, computedHashBase64);
-            boolean freshnessStatus = compareRefreshTokenInterval(refreshToken,FRESHNESS_RANGE);
+        JsonObject recordObject = rootJson.get(RECORD).getAsJsonObject();
 
-            String statusMessage = String.format("%sstatus= `%s` - `%s`",
-              MESSAGE_PREFIX_CHECK, integrityStatus ? UNALTERED : ALTERED, freshnessStatus ? FRESH : STALE);
+        String storedHashBase64 = rootJson.get(METADATA).getAsJsonObject().get(HASH).getAsString();
+        String computedHashBase64 = digestAndBase64(recordObject, serverPrivate);
+        String refreshTokenBase64 = rootJson.get(METADATA).getAsJsonObject().get(REFRESH_TOKEN).getAsString();
+        String refreshToken =  getRefreshToken(refreshTokenBase64, userPrivate);
+        
+        boolean integrityStatus = compareBase64Hashes(storedHashBase64, computedHashBase64);
+        boolean freshnessStatus = compareRefreshTokenInterval(refreshToken,FRESHNESS_RANGE);
 
-            System.out.println(statusMessage);  
-        }
+        String statusMessage = String.format("%sstatus= `%s` - `%s`",
+            MESSAGE_PREFIX_CHECK, integrityStatus ? UNALTERED : ALTERED, freshnessStatus ? FRESH : STALE);
+
+        System.out.println(statusMessage);  
+    
     }
 
     // --------------------------------------------------------------------------------------------
@@ -260,6 +231,27 @@ public class CryptoLibrary {
         return pub;
     }
 
+    /**
+     * Generate a symmetric encryption key using the AES algorithm.
+     * 
+     * This method creates a 128-bit AES key. AES (Advanced Encryption Standard) 
+     *  The generated key can be used for encrypting and decrypting data.
+     *
+     * @return             An AES encryption key
+     * @throws Exception   If a key generation error occurs.
+     */
+    public static Key generateKeyAES() throws Exception {
+        // Create a KeyGenerator instance for the AES encryption algorithm
+        KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+
+        // Initialize the KeyGenerator with a key size of 128 bits
+        keyGen.init(128);
+
+        // Generate and return the AES key
+        Key key = keyGen.generateKey();
+        return key;
+    }
+
     // --------------------------------------------------------------------------------------------
     //  Utilities - freshness
     // --------------------------------------------------------------------------------------------
@@ -314,6 +306,97 @@ public class CryptoLibrary {
     //  Utilities - misc
     // --------------------------------------------------------------------------------------------
 
+    public static void writeJsonObjectToFile(JsonObject jsonObject, String outputFile) throws Exception {
+
+        try (FileWriter fileWriter = new FileWriter(outputFile)) {
+            gson = new GsonBuilder().setPrettyPrinting().create();
+            gson.toJson(jsonObject, fileWriter);
+        }
+    }
+    public static JsonObject readFileToJsonObject(String inputFile) throws Exception  {
+
+        try (FileReader fileReader = new FileReader(inputFile)) {
+            return gson.fromJson(fileReader, JsonObject.class);
+        }
+    }
+
+    /**
+     * Encrypts specified fields of a patient's record using AES and RSA encryption.
+     *
+     * @param patient     The patient's record (the core data handled) in JSON format.
+     * @param key         The AES key for encryption.
+     * @param userPublic  The public RSA key for encryption.
+     * @return            The encrypted patient record.
+     * @throws Exception  If an encryption error occurs.
+     */
+    public static JsonObject EncryptRecord(JsonObject patient, Key key, Key userPublic) throws Exception {
+
+        JsonObject encryptedRecord = new JsonObject();
+        // Encrypt fields using AES
+        encryptFields(patient, encryptedRecord, AES_FIELDS, key, true);
+    
+        // Encrypt fields using RSA
+        encryptFields(patient, encryptedRecord, RSA_FIELDS, userPublic, false);
+
+        return encryptedRecord;
+    }
+
+    /**
+     * Encrypts fields of a JSON object using AES or RSA (when appropriate).
+     *
+     * @param patientObject   JsonObject containing data to encrypt.
+     * @param encryptedRecord JsonObject to store encrypted data.
+     * @param fields          Array of field names to be encrypted.
+     * @param key             Encryption key.
+     * @param useAes          Flag to determine encryption type (AES if true, RSA if false).
+     * @throws Exception      If an encryption error occurs.
+     */
+    private static void encryptFields(JsonObject patientObject, JsonObject encryptedRecord, String[] fields, Key key, boolean useAes) throws Exception {
+
+        for (String field : fields) 
+        {
+            byte[] bytes;
+            if (field.equals(CONSULTATION_RECORDS) || field.equals(KNOWN_ALLERGIES)) {
+                JsonArray jsonArray = patientObject.get(field).getAsJsonArray();
+                bytes = jsonArray.toString().getBytes();
+            } else {
+                bytes = patientObject.get(field).getAsString().getBytes();
+            }
+            byte[] encryptedBytes = useAes ? aes_encrypt(bytes, key) : rsa_encrypt_public(bytes, key);
+            String encryptedBase64 = Base64.getEncoder().encodeToString(encryptedBytes);
+            encryptedRecord.addProperty(field, encryptedBase64);
+        }
+    }
+
+    /**
+     * Computes and Encrypts Metadata Linked to the Patient's Record
+     *
+     * @param key            Encryption key.
+     * @param userPublic     The public RSA key for encryption.
+     * @param useAes         Flag to determine encryption type (AES if true, RSA if false).
+     * @return               The encrypted metadata.
+     * @throws Exception     If an encryption error occurs.
+     */
+    public static JsonObject encryptMetadata(Key key, Key userPublic, Key serverPrivate, JsonObject encryptedRecord) throws Exception {
+
+        JsonObject metadata = new JsonObject();
+        
+        byte[] bytes = key.getEncoded();
+        byte[] encryptedBytes = rsa_encrypt_public(bytes,userPublic);
+        String encryptedBase64 = Base64.getEncoder().encodeToString(encryptedBytes);
+        metadata.addProperty(KEY, encryptedBase64);
+
+        byte[] freshnessBytes = Instant.now().toString().getBytes();
+        byte[] encryptedFreshness = rsa_encrypt_public(freshnessBytes, userPublic);
+        String freshnessEncoded = Base64.getEncoder().encodeToString(encryptedFreshness);
+        metadata.addProperty(REFRESH_TOKEN, freshnessEncoded);
+
+        String hashBase64 = digestAndBase64(encryptedRecord, serverPrivate);
+        metadata.addProperty(HASH, hashBase64);
+
+        return metadata;
+    }
+
     public static JsonObject getDecryptedMediTrackRecord(String keyBase64, JsonObject recordObject, Key userPrivate) throws Exception {
 
             JsonObject decryptedMediTRackRecordObject = new JsonObject();
@@ -360,5 +443,6 @@ public class CryptoLibrary {
             return decryptedMediTRackRecordObject;
 
     }
+    
 
 }
