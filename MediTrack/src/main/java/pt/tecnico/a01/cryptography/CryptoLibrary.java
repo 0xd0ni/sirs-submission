@@ -93,7 +93,7 @@ public class CryptoLibrary {
         Key key = generateKeyAES();
 
         // encrypts the core data format
-        JsonObject record = EncryptRecord(rootJson.get(PATIENT).getAsJsonObject(), key, userPublic);
+        JsonObject record = encryptRecord(rootJson.get(PATIENT).getAsJsonObject(), key, userPublic);
         // computes and encrypts the metadata linked to the patient's record - (core data format)
         JsonObject metadata = encryptMetadata(key, userPublic, serverPrivate, record);
      
@@ -329,7 +329,7 @@ public class CryptoLibrary {
      * @return            The encrypted patient record.
      * @throws Exception  If an encryption error occurs.
      */
-    public static JsonObject EncryptRecord(JsonObject patient, Key key, Key userPublic) throws Exception {
+    public static JsonObject encryptRecord(JsonObject patient, Key key, Key userPublic) throws Exception {
 
         JsonObject encryptedRecord = new JsonObject();
         // Encrypt fields using AES
