@@ -4,6 +4,12 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
+  <parent>
+	<groupId>org.springframework.boot</groupId>
+	<artifactId>spring-boot-starter-parent</artifactId>
+	<version>3.2.0</version>
+	<relativePath/> <!-- lookup parent from repository -->
+  </parent>
   <groupId>main.java.pt.tecnico.a01</groupId>
   <artifactId>MediTrack</artifactId>
   <version>1.0-SNAPSHOT</version>
@@ -17,6 +23,16 @@
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
 		<java.version>1.8</java.version>
+		<java.version>17</java.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven-compiler-plugin.source>17</maven-compiler-plugin.source>
+        <maven-compiler-plugin.target>17</maven-compiler-plugin.target>
+        <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
+        <mongodb-driver-sync.version>4.11.1</mongodb-driver-sync.version>
+        <mongodb-crypt.version>1.8.0</mongodb-crypt.version>
+        <!-- Have to keep version 1.2.12 because slf4j-api isn't optional in mongodb-crypt and is using an old version. -->
+        <!-- See https://jira.mongodb.org/browse/JAVA-5240 for a workaround-->
+        <logback-classic.version>1.2.12</logback-classic.version>
 		<maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
 
 		<exec-maven-plugin.version>1.6.0</exec-maven-plugin.version>
@@ -72,6 +88,42 @@
       		<version>4.13.2</version>
       		<scope>test</scope>
     	</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.h2database</groupId>
+    		<artifactId>h2</artifactId>
+    		<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web-services</artifactId>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver-sync</artifactId>
+            <version>${mongodb-driver-sync.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-crypt</artifactId>
+            <version>${mongodb-crypt.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback-classic.version}</version>
+        </dependency>
   </dependencies>
 
   <build>
@@ -102,11 +154,22 @@
 					</execution>
 				</executions>
 				<configuration>
-					<mainClass>${mainclass}</mainClass>
-					<arguments>
-						<!-- can be defined here with multiple argument tags, 
-						or in command line with -Dexec.args="arg0 arg1 arg2" -->
-					</arguments>
+					<programs>
+						<program>
+							<mainClass>main.java.pt.tecnico.a01.MediTrack</mainClass>
+							<arguments>
+								<!-- can be defined here with multiple argument tags, 
+								or in command line with -Dexec.args="arg0 arg1 arg2" -->
+							</arguments>
+						</program>
+						<program>
+							<mainClass>main.java.pt.tecnico.a01.server.ServerApplication</mainClass>
+							<arguments>
+								<!-- can be defined here with multiple argument tags, 
+								or in command line with -Dexec.args="arg0 arg1 arg2" -->
+							</arguments>
+						</program>
+					</programs>
 				</configuration>
 			</plugin>
 			<!-- The Application Assembler plug-in generates scripts for starting Java applications. 
