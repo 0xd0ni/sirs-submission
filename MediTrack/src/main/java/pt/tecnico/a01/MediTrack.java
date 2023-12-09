@@ -39,9 +39,8 @@ public class MediTrack
                 if(args.length == 3) {
                     System.out.println("[MediTrack - unprotect]: Unprotecting file " + inputFile + " to " + outputFile);
                     try {
-                        Key serverPublic = CryptoLibrary.readPublicKey(serverPublicKeyPath);
                         Key userPrivate = CryptoLibrary.readPrivateKey(userPrivateKeyPath);
-                        CryptoLibrary.unprotect(inputFile, outputFile, serverPublic, userPrivate);
+                        CryptoLibrary.unprotect(inputFile, outputFile, userPrivate);
                     } catch(Exception e) {
                         System.out.println("Error unprotecting file " + e);
                     }
