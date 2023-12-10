@@ -45,8 +45,6 @@ public class CryptoLibrary {
 
     private static final String PATIENT = "patient";
     private static final String CONSULTATION_RECORDS = "consultationRecords";
-    
-    
     private static final String RECORD = "record";
     private static final String METADATA = "metadata";
     private static final String HASH = "hash";
@@ -54,7 +52,6 @@ public class CryptoLibrary {
     private static final String REFRESH_TOKEN = "refreshToken";
     private static final String KNOWN_ALLERGIES = "knownAllergies";
     
-
     private static final String MESSAGE_PREFIX_CHECK = "[MediTrack (check)]: ";
     private static final String UNALTERED = "unaltered";
     private static final String ALTERED = "altered";
@@ -79,7 +76,8 @@ public class CryptoLibrary {
      * @param userPublic    The public key of the user, used to encrypt the core data format and part of the metadata.
      * @throws Exception    If any error occurs during file reading/writing or encryption processes.
      */
-    public static void protect(String inputFile, String outputFile, Key serverPrivate, Key userPublic) throws Exception {
+    public static void protect(String inputFile, String outputFile, Key serverPrivate, Key userPublic) 
+        throws Exception {
 
         JsonObject rootJson = readFileToJsonObject(inputFile);
         System.out.println("JSON object: " + rootJson);
@@ -101,11 +99,12 @@ public class CryptoLibrary {
         
     }
 
-      /**
+    /**
      * Unprotects MediTrack records (sensitive data) by decrypting it using a combination of symmetric 
      * and asymmetric decryption techniques.
      * 
-     * This method reads a JSON object from the specified input file and decrypts its contents.In essence, it obtains the original 
+     * This method reads a JSON object from the specified input file and decrypts its contents.In essence, it obtains
+     * the original 
      * data that was previously secured in `protect`.
      * The decrypted data is then written to the specified output file.
      *
@@ -131,7 +130,19 @@ public class CryptoLibrary {
         writeJsonObjectToFile(patient, outputFile);
     }
 
-
+    /**
+     * Checks MediTrack records (sensitive data) in order to verify the status of both the integrity and 
+     * freshness protection
+     * 
+     * This method reads a JSON object from the specified input file and computes/compares the values associated 
+     * to the digest and 
+     * refreshToken.
+     *
+     * @param inputFile     The path of the input file containing the JSON object to be decrypted.
+     * @param serverPrivate The private key of the server, used in the encryption process.
+     * @param userPrivate   The private key of the user, used to decrypt the record
+     * @throws Exception    If any error occurs during file reading/writing or encryption processes.
+     */
     public static void check(String inputFile, Key serverPrivate, Key userPrivate) throws Exception {
 
         JsonObject rootJson = readFileToJsonObject(inputFile);
@@ -157,6 +168,13 @@ public class CryptoLibrary {
     //  Utilities
     // --------------------------------------------------------------------------------------------
 
+     /** TODO:
+     * 
+     * @param  bytes 
+     * @param  key
+     * @return               
+     * @throws Exception     If any I/O / key generation issue occurs.
+     */
     public static byte[] aes_encrypt(byte[] bytes, Key key) throws Exception{
         // cipher data
         final String CIPHER_ALGO = "AES/ECB/PKCS5Padding";
@@ -166,8 +184,14 @@ public class CryptoLibrary {
         byte[] cipherBytes = cipher.doFinal(bytes);
         return cipherBytes;
     }
-
-
+    
+    /** TODO:
+     * 
+     * @param  bytes 
+     * @param  key
+     * @return               
+     * @throws Exception     If any I/O / key generation issue occurs.
+     */
     public static byte[] aes_decrypt(byte[] bytes, Key key) throws Exception{
         // cipher data
         final String CIPHER_ALGO = "AES/ECB/PKCS5Padding";
@@ -178,7 +202,13 @@ public class CryptoLibrary {
         return decipheredBytes;
     }
 
-
+    /** TODO:
+     * 
+     * @param  bytes 
+     * @param  key
+     * @return               
+     * @throws Exception     If any I/O / key generation issue occurs.
+     */
     public static byte[] rsa_encrypt_public(byte[] bytes, Key key) throws Exception{
         // cipher data
         final String CIPHER_ALGO = "RSA/ECB/PKCS1Padding";
@@ -189,7 +219,13 @@ public class CryptoLibrary {
         return cipherBytes;
     }
 
-
+    /** TODO:
+     * 
+     * @param  bytes 
+     * @param  key
+     * @return               
+     * @throws Exception     If any I/O / key generation issue occurs.
+     */
     public static byte[] rsa_encrypt_private(byte[] bytes, Key key) throws Exception{
         // cipher data
         final String CIPHER_ALGO = "RSA/ECB/PKCS1Padding";
@@ -200,7 +236,13 @@ public class CryptoLibrary {
         return cipherBytes;
     }
 
-
+    /** TODO:
+     * 
+     * @param  bytes 
+     * @param  key
+     * @return               
+     * @throws Exception     If any I/O / key generation issue occurs.
+     */
     public static byte[] rsa_decrypt(byte[] bytes, Key key) throws Exception{
         // cipher data
         final String CIPHER_ALGO = "RSA/ECB/PKCS1Padding";
@@ -211,7 +253,13 @@ public class CryptoLibrary {
         return decipheredBytes;
     }
 
-
+     
+    /** TODO:
+     * 
+     * @param  filename    
+     * @return               
+     * @throws Exception     If any I/O / key generation issue occurs.
+     */
     public static byte[] readFile(String filename) throws Exception {
         File file = new File(filename);
         FileInputStream fis = new FileInputStream(file);
@@ -221,7 +269,13 @@ public class CryptoLibrary {
         return fileBytes;
     }
 
-
+    
+    /** TODO:
+     * 
+     * @param  filename    
+     * @return               
+     * @throws Exception     If any I/O / key generation issue occurs.
+     */
     public static Key readPrivateKey(String filename) throws Exception {
         byte[] privEncoded = readFile(filename);
         PKCS8EncodedKeySpec privSpec = new PKCS8EncodedKeySpec(privEncoded);
@@ -230,6 +284,12 @@ public class CryptoLibrary {
         return priv;
     }
 
+    /** TODO:
+     * 
+     * @param  filename    
+     * @return               
+     * @throws Exception     If any I/O / key generation issue occurs.
+     */
     public static Key readPublicKey(String filename) throws Exception {
         System.out.println("Reading public key from file " + filename + " ...");
         byte[] pubEncoded = readFile(filename);
@@ -240,10 +300,10 @@ public class CryptoLibrary {
     }
 
     /**
-     * Generate a symmetric encryption key using the AES algorithm.
+     * Generates a symmetric encryption key using the AES algorithm.
      * 
      * This method creates a 128-bit AES key. AES (Advanced Encryption Standard) 
-     *  The generated key can be used for encrypting and decrypting data.
+     * The generated key can be used for encrypting and decrypting data.
      *
      * @return             An AES encryption key
      * @throws Exception   If a key generation error occurs.
@@ -264,6 +324,15 @@ public class CryptoLibrary {
     //  Utilities - freshness
     // --------------------------------------------------------------------------------------------
 
+    // TODO:
+    /** Compares each byte of two separate Base64 hashes in order to verify if they both correspond to the same
+     *  record
+     * 
+     * @param  refreshToken  
+     * @param  range    
+     * @return                A boolean that signals whether or not the refreshToken is within an acceptable time range.
+     * @throws Exception       
+     */
     public static boolean compareRefreshTokenInterval(String refreshToken, long range) {
         Instant refreshTokenInstant = Instant.parse(refreshToken);
         Instant current = Instant.now();
@@ -278,8 +347,16 @@ public class CryptoLibrary {
         
         return isWithinBeforeRange || isWithinAfterRange;
     }
- 
     
+
+    /** Decodes and Decrypts a each byte of two separate Base64 hashes in order to verify if they both correspond to the same
+     *  record
+     * 
+     * @param  freshnessEncoded 
+     * @param  userPrivate     
+     * @return                  
+     * @throws Exception       
+     */
     public static String getRefreshToken(String freshnessEncoded,Key userPrivate) throws Exception {
         byte[] decodedRefreshToken = Base64.getDecoder().decode(freshnessEncoded); 
         byte[] unencryptedRefreshToken = rsa_decrypt(decodedRefreshToken, userPrivate);
@@ -291,16 +368,34 @@ public class CryptoLibrary {
 
     // --------------------------------------------------------------------------------------------
     //  Utilities - hashes
-    // --------------------------------------------------------------------------------------------
+    // -------------------------------------------------------------------------------------------- 
 
+    /** Compares each byte of two separate Base64 hashes in order to verify if they both correspond to the same
+     *  record
+     * 
+     * @param  base64Hash1   First Base64 encoded hash to be compared 
+     * @param  base64Hash2   Second Base64 encoded hash to be compared
+     * @param  serverPrivate The private RSA key used for encrypting the hash.    
+     * @return               A boolean that signals whether or not the received Base64 encoded Hashes are equal.
+     * @throws Exception     If any decoding issue occurs.
+     */
     public static boolean compareBase64Hashes(String base64Hash1, String base64Hash2) {
+        // NOTE THAT:
+        // In order to prevent timing attacks, we're comparing each byte of the decoded hashes and 
+        // ensuring the operation takes the same time for both equal and unequal hashes.
         byte[] decodedHash1 = Base64.getDecoder().decode(base64Hash1);
         byte[] decodedHash2 = Base64.getDecoder().decode(base64Hash2);
 
         return MessageDigest.isEqual(decodedHash1, decodedHash2);
     }
 
-
+   /** Computes a SHA-256 digest of the given JsonObject and encrypts it with RSA using a private key,
+     * then encodes the result in Base64.
+     *      
+     * @param  jsonObject    The JsonObject to be written to the file.
+     * @param  serverPrivate The path of the file where the JsonObject should be written.
+     * @throws Exception     If an I/O error occurs or the file cannot be written.
+     */
     public static String digestAndBase64(JsonObject recordObject,Key serverPrivate) throws Exception {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         byte[] hash = digest.digest(gson.toJson(recordObject).getBytes("UTF-8"));
@@ -320,9 +415,9 @@ public class CryptoLibrary {
      * This method takes a JsonObject and writes it to the specified output file.
      * The file is created or overwritten if it already exists.
      *
-     * @param jsonObject The JsonObject to be written to the file.
-     * @param outputFile The path of the file where the JsonObject should be written.
-     * @throws Exception If an I/O error occurs or the file cannot be written.
+     * @param  jsonObject The JsonObject to be written to the file.
+     * @param  outputFile The path of the file where the JsonObject should be written.
+     * @throws Exception  If an I/O error occurs or the file cannot be written.
      */
     public static void writeJsonObjectToFile(JsonObject jsonObject, String outputFile) throws Exception {
 
@@ -337,8 +432,7 @@ public class CryptoLibrary {
      * 
      * This method reads a file from the given input path and parses it into a JsonObject.
      *
-     * @param inputFile The path of the file from which JSON content is to be read.
-     * @return JsonObject The parsed JsonObject from the file's content.
+     * @param  inputFile The path of the file from which JSON content is to be read.
      * @throws Exception If an I/O error occurs, the file cannot be read, or the content is not valid JSON.
      */
     public static JsonObject readFileToJsonObject(String inputFile) throws Exception  {
@@ -351,11 +445,11 @@ public class CryptoLibrary {
     /**
      * Encrypts specified fields of a patient's record using AES and RSA encryption.
      *
-     * @param patient     The patient's record (the core data handled) in JSON format.
-     * @param key         The AES key for encryption.
-     * @param userPublic  The public RSA key for encryption.
-     * @return            The encrypted patient record.
-     * @throws Exception  If an encryption error occurs.
+     * @param  patient     The patient's record (the core data handled) in JSON format.
+     * @param  key         The AES key for encryption.
+     * @param  userPublic  The public RSA key for encryption.
+     * @return             The encrypted patient record.
+     * @throws Exception   If an encryption error occurs.
      */
     public static JsonObject encryptRecord(JsonObject patient, Key key, Key userPublic) throws Exception {
 
@@ -373,14 +467,15 @@ public class CryptoLibrary {
     /**
      * Encrypts fields of a JSON object using AES or RSA (when appropriate).
      *
-     * @param patientObject   JsonObject containing data to encrypt.
-     * @param encryptedRecord JsonObject to store encrypted data.
-     * @param fields          Array of field names to be encrypted.
-     * @param key             Encryption key.
-     * @param useAes          Flag to determine encryption type (AES if true, RSA if false).
-     * @throws Exception      If an encryption error occurs.
+     * @param  patientObject    JsonObject containing data to encrypt.
+     * @param  encryptedRecord  JsonObject to store encrypted data.
+     * @param  fields           Array of field names to be encrypted.
+     * @param  key              Encryption key.
+     * @param  useAes           Flag to determine encryption type (AES if true, RSA if false).
+     * @throws Exception        If an encryption error occurs.
      */
-    private static void encryptFields(JsonObject patientObject, JsonObject encryptedRecord, String[] fields, Key key, boolean useAes) throws Exception {
+    private static void encryptFields(JsonObject patientObject, JsonObject encryptedRecord, String[] fields, 
+                        Key key, boolean useAes) throws Exception {
 
         for (String field : fields) 
         {
@@ -400,13 +495,14 @@ public class CryptoLibrary {
     /**
      * Computes and Encrypts Metadata Linked to the Patient's Record
      *
-     * @param key            Encryption key.
-     * @param userPublic     The public RSA key for encryption.
-     * @param useAes         Flag to determine encryption type (AES if true, RSA if false).
-     * @return               The encrypted metadata.
-     * @throws Exception     If an encryption error occurs.
+     * @param  key            Encryption key.
+     * @param  userPublic     The public RSA key for encryption.
+     * @param  useAes         Flag to determine encryption type (AES if true, RSA if false).
+     * @return                The encrypted metadata.
+     * @throws Exception      If an encryption error occurs.
      */
-    public static JsonObject encryptMetadata(Key key, Key userPublic, Key serverPrivate, JsonObject encryptedRecord) throws Exception {
+    public static JsonObject encryptMetadata(Key key, Key userPublic, Key serverPrivate,
+                             JsonObject encryptedRecord) throws Exception {
 
         JsonObject metadata = new JsonObject();
         
@@ -429,11 +525,11 @@ public class CryptoLibrary {
     /**
      * Decrypts specified fields of a patient's record using AES and RSA decryption.
      *
-     * @param keyBase64   encoded and encrypted symmetric encryption key 
-     * @param record      JsonObject containing data to decrypt. 
-     * @param userPrivate The private RSA key for decryption.
-     * @return            The decrypted patient record.
-     * @throws Exception  If a decryption error occurs.
+     * @param  keyBase64   encoded and encrypted symmetric encryption key 
+     * @param  record      JsonObject containing data to decrypt. 
+     * @param  userPrivate The private RSA key for decryption.
+     * @return             The decrypted patient record.
+     * @throws Exception   If a decryption error occurs.
      */
     public static JsonObject decryptRecord(String keyBase64, JsonObject record, Key userPrivate) throws Exception {
 
@@ -455,18 +551,18 @@ public class CryptoLibrary {
         return decryptedRecord;
     }
 
-
     /**
      * Decrypts fields of a JSON object using AES or RSA (when appropriate).
      *
-     * @param recordObject    JsonObject containing data to decrypt.
-     * @param decryptedRecord JsonObject to store decrypted data.
-     * @param fields          Array of field names to be decrypted.
-     * @param key             Encryption key.
-     * @param useAes          Flag to determine encryption type (AES if true, RSA if false).
-     * @throws Exception      If a decryption error occurs.
+     * @param  recordObject    JsonObject containing data to decrypt.
+     * @param  decryptedRecord JsonObject to store decrypted data.
+     * @param  fields          Array of field names to be decrypted.
+     * @param  key             Encryption key.
+     * @param  useAes          Flag to determine encryption type (AES if true, RSA if false).
+     * @throws Exception       If a decryption error occurs.
      */
-    private static void decryptFields(JsonObject recordObject, JsonObject decryptedRecord, String[] fields, Key key, boolean useAes) throws Exception {
+    private static void decryptFields(JsonObject recordObject, JsonObject decryptedRecord, String[] fields, Key key,
+                        boolean useAes) throws Exception {
     
         for (String field : fields) 
         {   
@@ -477,8 +573,10 @@ public class CryptoLibrary {
             if (field.equals(CONSULTATION_RECORDS) || field.equals(KNOWN_ALLERGIES)) {
                 // this is necessary since consultationRecords and KnownAllergies have different formats
                 // NOTE THAT:
-                // - consultationRecords comprises an array of JsonObjects, where each JsonObject represents a consultation record. This includes fields such as date, medical speciality, doctor name, practice, and treatment summary.
-                // - knownAllergies, on the other hand, is an array of Strings, with each string representing a specific allergy.
+                // - consultationRecords comprises an array of JsonObjects, where each JsonObject represents 
+                //   a consultation record. 
+                // - knownAllergies, on the other hand, is an array of Strings, with each string representing 
+                //   a specific allergy.
                 // Example structures:
                 // "consultationRecords": [
                 //     {
