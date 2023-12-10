@@ -34,11 +34,8 @@ public class CryptoLibrary {
 	// mapping of cryptographic algorithms and correspondent MediTrack field
 	public static final String[] AES_FIELDS = {"name", "sex", "consultationRecords"};
 	public static final String[] RSA_FIELDS = {"dateOfBirth", "bloodType", "knownAllergies"};
-
-
-    // TODO:
-    // to remove later (a rather small workaround)
-    public static final String[] AES_FIELDS_S = {"name", "sex"};
+    public static final String[] AES_FIELDS_ORDERING = {"name", "sex"};
+    public static final String[] AES_FIELD_ORDERING = {"consultationRecords"};
     
     // we can share an instance and let methods reuse it
     public static Gson gson = new Gson();
@@ -79,7 +76,7 @@ public class CryptoLibrary {
      * @param inputFile     The path of the input file containing the JSON object to be encrypted.
      * @param outputFile    The path of the output file where the encrypted JSON object will be saved.
      * @param serverPrivate The private key of the server, used in the encryption process.
-     * @param userPublic    The public key of the user, used to encrypt the metadata.
+     * @param userPublic    The public key of the user, used to encrypt the core data format and part of the metadata.
      * @throws Exception    If any error occurs during file reading/writing or encryption processes.
      */
     public static void protect(String inputFile, String outputFile, Key serverPrivate, Key userPublic) throws Exception {
@@ -104,23 +101,34 @@ public class CryptoLibrary {
         
     }
 
-
+      /**
+     * Unprotects MediTrack records (sensitive data) by decrypting it using a combination of symmetric 
+     * and asymmetric decryption techniques.
+     * 
+     * This method reads a JSON object from the specified input file and decrypts its contents.In essence, it obtains the original 
+     * data that was previously secured in `protect`.
+     * The decrypted data is then written to the specified output file.
+     *
+     * @param inputFile     The path of the input file containing the JSON object to be decrypted.
+     * @param outputFile    The path of the output file where the decrypted JSON object will be saved.
+     * @param serverPrivate The private key of the server, used in the encryption process.
+     * @param userPrivate   The private key of the user, used to decrypt the record
+     * @throws Exception    If any error occurs during file reading/writing or encryption processes.
+     */
     public static void unprotect(String inputFile, String outputFile, Key userPrivate) throws Exception {
         
         JsonObject rootJson = readFileToJsonObject(inputFile);
         System.out.println("JSON object: " + rootJson);
 
-        JsonObject patientObject = new JsonObject();
-        JsonObject recordObject = rootJson.get(RECORD).getAsJsonObject();
+        JsonObject patient = new JsonObject();
+       
+        // decrypts the secured document
+        JsonObject unprotectedRecord = decryptRecord(rootJson.get(METADATA).getAsJsonObject().get(KEY).getAsString(),
+                                       rootJson.get(RECORD).getAsJsonObject(), userPrivate);
 
-        // explain:
-        String keyBase64 =  rootJson.get(METADATA).getAsJsonObject().get(KEY).getAsString();
+        patient.add(PATIENT, unprotectedRecord);
 
-        // get the core data format decrypted 
-        JsonObject decryptedRecord = getDecryptedMediTrackRecord(keyBase64,recordObject,userPrivate);
-        patientObject.add(PATIENT, decryptedRecord);
-
-        writeJsonObjectToFile(patientObject, outputFile);
+        writeJsonObjectToFile(patient, outputFile);
     }
 
 
@@ -306,6 +314,7 @@ public class CryptoLibrary {
     //  Utilities - misc
     // --------------------------------------------------------------------------------------------
 
+   
     public static void writeJsonObjectToFile(JsonObject jsonObject, String outputFile) throws Exception {
 
         try (FileWriter fileWriter = new FileWriter(outputFile)) {
@@ -313,6 +322,7 @@ public class CryptoLibrary {
             gson.toJson(jsonObject, fileWriter);
         }
     }
+
     public static JsonObject readFileToJsonObject(String inputFile) throws Exception  {
 
         try (FileReader fileReader = new FileReader(inputFile)) {
@@ -332,12 +342,13 @@ public class CryptoLibrary {
     public static JsonObject encryptRecord(JsonObject patient, Key key, Key userPublic) throws Exception {
 
         JsonObject encryptedRecord = new JsonObject();
+
         // Encrypt fields using AES
         encryptFields(patient, encryptedRecord, AES_FIELDS, key, true);
     
         // Encrypt fields using RSA
         encryptFields(patient, encryptedRecord, RSA_FIELDS, userPublic, false);
-
+        
         return encryptedRecord;
     }
 
@@ -397,52 +408,81 @@ public class CryptoLibrary {
         return metadata;
     }
 
-    public static JsonObject getDecryptedMediTrackRecord(String keyBase64, JsonObject recordObject, Key userPrivate) throws Exception {
+    /**
+     * Decrypts specified fields of a patient's record using AES and RSA decryption.
+     *
+     * @param keyBase64   encoded and encrypted symmetric encryption key 
+     * @param record      JsonObject containing data to decrypt. 
+     * @param userPrivate The private RSA key for decryption.
+     * @return            The decrypted patient record.
+     * @throws Exception  If a decryption error occurs.
+     */
+    public static JsonObject decryptRecord(String keyBase64, JsonObject record, Key userPrivate) throws Exception {
 
-            JsonObject decryptedMediTRackRecordObject = new JsonObject();
+        JsonObject decryptedRecord = new JsonObject();
 
-            System.out.println("[MediTrack]: getDecryptedMediTrackRecord");
-            System.out.println("metadata - key " + keyBase64);
-            byte[] encryptedKey = Base64.getDecoder().decode(keyBase64);
-            byte[] decryptedKey = rsa_decrypt(encryptedKey, userPrivate);
-            Key key = new SecretKeySpec(decryptedKey, 0, decryptedKey.length, "AES");
+        byte[] encryptedKey = Base64.getDecoder().decode(keyBase64);
+        byte[] decryptedKey = rsa_decrypt(encryptedKey, userPrivate);
+        Key key = new SecretKeySpec(decryptedKey, 0, decryptedKey.length, "AES");
 
-            for (String field: AES_FIELDS_S)
-            {
-                byte[] bytes = recordObject.get(field).getAsString().getBytes();
-                byte[] decryptedBase64 = Base64.getDecoder().decode(bytes);
-                byte[] decryptedBytes = aes_decrypt(decryptedBase64,key);
-                decryptedMediTRackRecordObject.addProperty(field, new String(decryptedBytes));
-
-            }
-            for (String field: RSA_FIELDS)
-            {
-                byte[] bytes = recordObject.get(field).getAsString().getBytes();
-                byte[] decryptedBase64 = Base64.getDecoder().decode(bytes);
-                byte[] decryptedBytes = rsa_decrypt(decryptedBase64, userPrivate);
-                if (field.equals("knownAllergies")) {
-                    // TODO: wrap in a function call ?
-                    Type listType = new TypeToken<List<String>>() {}.getType();
-                    List<String> knownAllergies = gson.fromJson(new String(decryptedBytes), listType);
-                    decryptedMediTRackRecordObject.add(field,gson.toJsonTree(knownAllergies));
-
-                } else {
-                    decryptedMediTRackRecordObject.addProperty(field, new String (decryptedBytes));
-                }
-            }
-
-            // workaround such that the order of the unprotected record matches the original
-            // TODO: simplify later ; or find a better approach
-            byte[] bytes = recordObject.get("consultationRecords").getAsString().getBytes();
-            byte[] decryptedBase64 = Base64.getDecoder().decode(bytes);
-            byte[] decryptedBytes = aes_decrypt(decryptedBase64,key);
-            Type listType = new TypeToken<List<JsonObject>>() {}.getType();
-            List<String> consultationRecords = gson.fromJson(new String(decryptedBytes), listType);
-            decryptedMediTRackRecordObject.add("consultationRecords",gson.toJsonTree(consultationRecords));
-
-            return decryptedMediTRackRecordObject;
-
-    }
+        // Decrypt fields using AES
+        decryptFields(record, decryptedRecord, AES_FIELDS_ORDERING, key, true);
     
+        // Decrypt fields using RSA
+        decryptFields(record, decryptedRecord, RSA_FIELDS, userPrivate, false);
+
+        // Decrypt the consultationRecords field
+        decryptFields(record, decryptedRecord, AES_FIELD_ORDERING, key, true);
+
+        return decryptedRecord;
+    }
+
+
+    /**
+     * Decrypts fields of a JSON object using AES or RSA (when appropriate).
+     *
+     * @param recordObject    JsonObject containing data to decrypt.
+     * @param decryptedRecord JsonObject to store decrypted data.
+     * @param fields          Array of field names to be decrypted.
+     * @param key             Encryption key.
+     * @param useAes          Flag to determine encryption type (AES if true, RSA if false).
+     * @throws Exception      If an decryption error occurs.
+     */
+    private static void decryptFields(JsonObject recordObject, JsonObject decryptedRecord, String[] fields, Key key, boolean useAes) throws Exception {
+    
+        for (String field : fields) 
+        {   
+            byte[] bytes = recordObject.get(field).getAsString().getBytes();
+            byte[] decodedBytes = Base64.getDecoder().decode(bytes);
+            byte[] decryptedBytes = useAes ? aes_decrypt(decodedBytes, key) : rsa_decrypt(decodedBytes, key);
+
+            if (field.equals(CONSULTATION_RECORDS) || field.equals(KNOWN_ALLERGIES)) {
+                // this is necessary since consultationRecords and KnownAllergies have different formats
+                // NOTE THAT:
+                // - consultationRecords comprises an array of JsonObjects, where each JsonObject represents a consultation record. This includes fields such as date, medical speciality, doctor name, practice, and treatment summary.
+                // - knownAllergies, on the other hand, is an array of Strings, with each string representing a specific allergy.
+                // Example structures:
+                // "consultationRecords": [
+                //     {
+                //         "date": "example_date",
+                //         "medicalSpeciality": "example_speciality",
+                //         "doctorName": "example_name",
+                //         "practice": "example_practice",
+                //         "treatmentSummary": "example_summary"
+                //     },
+                //     ... (more records)
+                // ]
+                //
+                // "knownAllergies": ["allergy1", ... (more allergies)]
+                Type listType = field.equals(CONSULTATION_RECORDS) ? new TypeToken<List<JsonObject>>() {}.getType() : 
+                                new TypeToken<List<String>>() {}.getType();
+                List<String> compositeRecords = gson.fromJson(new String(decryptedBytes), listType);
+                decryptedRecord.add(field, gson.toJsonTree(compositeRecords));
+            } else {
+                decryptedRecord.addProperty(field, new String(decryptedBytes));
+                
+            }        
+        }
+    }
 
 }
