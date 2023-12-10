@@ -314,7 +314,16 @@ public class CryptoLibrary {
     //  Utilities - misc
     // --------------------------------------------------------------------------------------------
 
-   
+    /**
+     * Writes the provided JsonObject to a file.
+     * 
+     * This method takes a JsonObject and writes it to the specified output file.
+     * The file is created or overwritten if it already exists.
+     *
+     * @param jsonObject The JsonObject to be written to the file.
+     * @param outputFile The path of the file where the JsonObject should be written.
+     * @throws Exception If an I/O error occurs or the file cannot be written.
+     */
     public static void writeJsonObjectToFile(JsonObject jsonObject, String outputFile) throws Exception {
 
         try (FileWriter fileWriter = new FileWriter(outputFile)) {
@@ -322,7 +331,16 @@ public class CryptoLibrary {
             gson.toJson(jsonObject, fileWriter);
         }
     }
-
+    
+    /**
+     * Reads JSON content from a file and converts it to a JsonObject.
+     * 
+     * This method reads a file from the given input path and parses it into a JsonObject.
+     *
+     * @param inputFile The path of the file from which JSON content is to be read.
+     * @return JsonObject The parsed JsonObject from the file's content.
+     * @throws Exception If an I/O error occurs, the file cannot be read, or the content is not valid JSON.
+     */
     public static JsonObject readFileToJsonObject(String inputFile) throws Exception  {
 
         try (FileReader fileReader = new FileReader(inputFile)) {
@@ -446,7 +464,7 @@ public class CryptoLibrary {
      * @param fields          Array of field names to be decrypted.
      * @param key             Encryption key.
      * @param useAes          Flag to determine encryption type (AES if true, RSA if false).
-     * @throws Exception      If an decryption error occurs.
+     * @throws Exception      If a decryption error occurs.
      */
     private static void decryptFields(JsonObject recordObject, JsonObject decryptedRecord, String[] fields, Key key, boolean useAes) throws Exception {
     
