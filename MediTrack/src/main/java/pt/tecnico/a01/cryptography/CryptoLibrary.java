@@ -170,12 +170,7 @@ public class CryptoLibrary {
     // --------------------------------------------------------------------------------------------
     //  Utilities
     // --------------------------------------------------------------------------------------------
-
-    // TODO:
-    // switch to a more secure cryptographic mechanism
-    // note that: ecb is not recommended for use in cryptographic protocols
-    // alternatives:  GCM, EAX or OCB
-
+    
     /**
      * Encrypts the given byte array using the AES encryption algorithm.
      * 
