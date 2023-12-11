@@ -52,6 +52,10 @@ public class CryptoLibrary {
     private static final String REFRESH_TOKEN = "refreshToken";
     private static final String KNOWN_ALLERGIES = "knownAllergies";
     
+    private static final String MESSAGE_JSON_OBJECT = "JSON object: ";
+    private static final String MESSAGE_CIPHER = "Ciphering with ";
+    private static final String MESSAGE_READ_PUBLIC_KEY = "Reading public key from file ";
+    private static final String MESSAGE_READ_PRIVATE_KEY = "Reading private key from file ";
     private static final String MESSAGE_PREFIX_CHECK = "[MediTrack (check)]: ";
     private static final String UNALTERED = "unaltered";
     private static final String ALTERED = "altered";
@@ -80,7 +84,7 @@ public class CryptoLibrary {
         throws Exception {
 
         JsonObject rootJson = readFileToJsonObject(inputFile);
-        System.out.println("JSON object: " + rootJson);
+        System.out.println(MESSAGE_JSON_OBJECT + rootJson);
         
         JsonObject protectedRecord = new JsonObject();
 
@@ -117,7 +121,7 @@ public class CryptoLibrary {
     public static void unprotect(String inputFile, String outputFile, Key userPrivate) throws Exception {
         
         JsonObject rootJson = readFileToJsonObject(inputFile);
-        System.out.println("JSON object: " + rootJson);
+        System.out.println(MESSAGE_JSON_OBJECT + rootJson);
 
         JsonObject patient = new JsonObject();
        
@@ -126,7 +130,6 @@ public class CryptoLibrary {
                                        rootJson.get(RECORD).getAsJsonObject(), userPrivate);
 
         patient.add(PATIENT, unprotectedRecord);
-
         writeJsonObjectToFile(patient, outputFile);
     }
 
@@ -168,85 +171,105 @@ public class CryptoLibrary {
     //  Utilities
     // --------------------------------------------------------------------------------------------
 
-     /** TODO:
+    // TODO:
+    // switch to a more secure cryptographic mechanism
+    // note that: ecb is not recommended for use in cryptographic protocols
+    // alternatives:  GCM, EAX or OCB
+
+    /**
+     * Encrypts the given byte array using the AES encryption algorithm.
      * 
-     * @param  bytes 
-     * @param  key
-     * @return               
-     * @throws Exception     If any I/O / key generation issue occurs.
+     * This method uses the AES encryption algorithm with ECB (Electronic Codebook) mode and PKCS5 padding scheme.
+     * It initializes a Cipher instance with the specified Key in encryption mode and processes the input byte array
+     * to produce the encrypted byte array.
+     *
+     *
+     * @param  bytes     The byte array to be encrypted. This should not be null.
+     * @param  key       The encryption key used for AES encryption. This should be a valid key for AES algorithm.
+     * @return           The encrypted byte array.
+     * @throws Exception If any error occurs during the encryption process. 
+     *                  
+     * 
      */
     public static byte[] aes_encrypt(byte[] bytes, Key key) throws Exception{
         // cipher data
         final String CIPHER_ALGO = "AES/ECB/PKCS5Padding";
-        System.out.println("Ciphering with " + CIPHER_ALGO + "...");
+        System.out.println(MESSAGE_CIPHER + CIPHER_ALGO + "...");
         Cipher cipher = Cipher.getInstance(CIPHER_ALGO);
         cipher.init(Cipher.ENCRYPT_MODE, key);
         byte[] cipherBytes = cipher.doFinal(bytes);
         return cipherBytes;
     }
     
-    /** TODO:
+    /**
+     * Decrypts the given byte array using the AES decryption algorithm.
      * 
-     * @param  bytes 
-     * @param  key
-     * @return               
-     * @throws Exception     If any I/O / key generation issue occurs.
+     * This method uses the AES decryption algorithm with ECB (Electronic Codebook) mode and PKCS5 padding scheme.
+     * It initializes a Cipher instance with the specified Key in decryption mode and processes the input byte array
+     * to produce the decrypted byte array.
+     *
+     *
+     * @param  bytes     The byte array to be decrypted. This should not be null.
+     * @param  key       The decryption key used for AES decryption.
+     * @return           The decrypted byte array.
+     * @throws Exception If any error occurs during the decryption process. 
+     *                  
+     * 
      */
     public static byte[] aes_decrypt(byte[] bytes, Key key) throws Exception{
         // cipher data
         final String CIPHER_ALGO = "AES/ECB/PKCS5Padding";
-        System.out.println("Ciphering with " + CIPHER_ALGO + "...");
+        System.out.println(MESSAGE_CIPHER + CIPHER_ALGO + "...");
         Cipher cipher = Cipher.getInstance(CIPHER_ALGO);
         cipher.init(Cipher.DECRYPT_MODE, key);
         byte[] decipheredBytes = cipher.doFinal(bytes);
         return decipheredBytes;
     }
 
-    /** TODO:
+    /**
+     * Encrypts the given byte array using the RSA encryption algorithm.
      * 
-     * @param  bytes 
-     * @param  key
-     * @return               
-     * @throws Exception     If any I/O / key generation issue occurs.
+     * This method uses the RSA encryption algorithm with ECB (Electronic Codebook) mode and PKCS5 padding scheme.
+     * It initializes a Cipher instance with the specified Key in encryption mode and processes the input byte array
+     * to produce the encrypted byte array.
+     *
+     *
+     * @param  bytes     The byte array to be encrypted. This should not be null.
+     * @param  key       The encryption key used for RSA encryption. 
+     * @return           The encrypted byte array.
+     * @throws Exception If any error occurs during the decryption process. 
+     *                  
+     * 
      */
-    public static byte[] rsa_encrypt_public(byte[] bytes, Key key) throws Exception{
+    public static byte[] rsa_encrypt(byte[] bytes, Key key) throws Exception{
         // cipher data
         final String CIPHER_ALGO = "RSA/ECB/PKCS1Padding";
-        System.out.println("Ciphering with " + CIPHER_ALGO + "...");
+        System.out.println(MESSAGE_CIPHER + CIPHER_ALGO + "...");
         Cipher cipher = Cipher.getInstance(CIPHER_ALGO);
         cipher.init(Cipher.ENCRYPT_MODE, key);
         byte[] cipherBytes = cipher.doFinal(bytes);
         return cipherBytes;
     }
 
-    /** TODO:
+    /**
+     * Decrypts the given byte array using the RSA decryption algorithm.
      * 
-     * @param  bytes 
-     * @param  key
-     * @return               
-     * @throws Exception     If any I/O / key generation issue occurs.
-     */
-    public static byte[] rsa_encrypt_private(byte[] bytes, Key key) throws Exception{
-        // cipher data
-        final String CIPHER_ALGO = "RSA/ECB/PKCS1Padding";
-        System.out.println("Ciphering with " + CIPHER_ALGO + "...");
-        Cipher cipher = Cipher.getInstance(CIPHER_ALGO);
-        cipher.init(Cipher.ENCRYPT_MODE, key);
-        byte[] cipherBytes = cipher.doFinal(bytes);
-        return cipherBytes;
-    }
-
-    /** TODO:
+     * This method uses the RSA decryption algorithm with ECB (Electronic Codebook) mode and PKCS5 padding scheme.
+     * It initializes a Cipher instance with the specified Key in decryption mode and processes the input byte array
+     * to produce the encrypted byte array.
+     *
+     *
+     * @param  bytes     The byte array to be decrypted. This should not be null.
+     * @param  key       The decryption key used for RSA encryption. 
+     * @return           The decrypted byte array.
+     * @throws Exception If any error occurs during the decryption process. 
+     *                  
      * 
-     * @param  bytes 
-     * @param  key
-     * @return               
-     * @throws Exception     If any I/O / key generation issue occurs.
      */
     public static byte[] rsa_decrypt(byte[] bytes, Key key) throws Exception{
         // cipher data
         final String CIPHER_ALGO = "RSA/ECB/PKCS1Padding";
-        System.out.println("Ciphering with " + CIPHER_ALGO + "...");
+        System.out.println(MESSAGE_CIPHER + CIPHER_ALGO + "...");
         Cipher cipher = Cipher.getInstance(CIPHER_ALGO);
         cipher.init(Cipher.DECRYPT_MODE, key);
         byte[] decipheredBytes = cipher.doFinal(bytes);
@@ -254,11 +277,12 @@ public class CryptoLibrary {
     }
 
      
-    /** TODO:
+    /** 
+     * Reads the given file to a byte array.
      * 
-     * @param  filename    
-     * @return               
-     * @throws Exception     If any I/O / key generation issue occurs.
+     * @param  filename      The path of the input file to be read to a byte array       
+     * @return               The byte array containing the data read
+     * @throws Exception     If any I/O error occurs.
      */
     public static byte[] readFile(String filename) throws Exception {
         File file = new File(filename);
@@ -270,13 +294,15 @@ public class CryptoLibrary {
     }
 
     
-    /** TODO:
+    /** 
+     * Reads the given file and generate the associated private key.
      * 
-     * @param  filename    
-     * @return               
-     * @throws Exception     If any I/O / key generation issue occurs.
+     * @param  filename      The path of the input file (key) to be read      
+     * @return               A valid public key.
+     * @throws Exception     If any I/O or key generation error occurs.
      */
     public static Key readPrivateKey(String filename) throws Exception {
+         System.out.println(MESSAGE_READ_PRIVATE_KEY + filename + " ...");
         byte[] privEncoded = readFile(filename);
         PKCS8EncodedKeySpec privSpec = new PKCS8EncodedKeySpec(privEncoded);
         KeyFactory keyFacPriv = KeyFactory.getInstance("RSA");
@@ -284,14 +310,15 @@ public class CryptoLibrary {
         return priv;
     }
 
-    /** TODO:
+    /** 
+     * Reads the given file and generate the associated public key.
      * 
-     * @param  filename    
-     * @return               
-     * @throws Exception     If any I/O / key generation issue occurs.
+     * @param  filename      The path of the input file to be read to a byte array       
+     * @return               A valid private key.
+     * @throws Exception     If any I/O or key generation error occurs.
      */
     public static Key readPublicKey(String filename) throws Exception {
-        System.out.println("Reading public key from file " + filename + " ...");
+        System.out.println(MESSAGE_READ_PUBLIC_KEY + filename + " ...");
         byte[] pubEncoded = readFile(filename);
         X509EncodedKeySpec pubSpec = new X509EncodedKeySpec(pubEncoded);
         KeyFactory keyFacPub = KeyFactory.getInstance("RSA");
@@ -399,7 +426,7 @@ public class CryptoLibrary {
     public static String digestAndBase64(JsonObject recordObject,Key serverPrivate) throws Exception {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         byte[] hash = digest.digest(gson.toJson(recordObject).getBytes("UTF-8"));
-        byte[] encryptedHash = rsa_encrypt_private(hash, serverPrivate);
+        byte[] encryptedHash = rsa_encrypt(hash, serverPrivate);
         String hashBase64 = Base64.getEncoder().encodeToString(encryptedHash);
 
         return hashBase64;
@@ -486,7 +513,7 @@ public class CryptoLibrary {
             } else {
                 bytes = patientObject.get(field).getAsString().getBytes();
             }
-            byte[] encryptedBytes = useAes ? aes_encrypt(bytes, key) : rsa_encrypt_public(bytes, key);
+            byte[] encryptedBytes = useAes ? aes_encrypt(bytes, key) : rsa_encrypt(bytes, key);
             String encryptedBase64 = Base64.getEncoder().encodeToString(encryptedBytes);
             encryptedRecord.addProperty(field, encryptedBase64);
         }
@@ -507,12 +534,12 @@ public class CryptoLibrary {
         JsonObject metadata = new JsonObject();
         
         byte[] bytes = key.getEncoded();
-        byte[] encryptedBytes = rsa_encrypt_public(bytes,userPublic);
+        byte[] encryptedBytes = rsa_encrypt(bytes,userPublic);
         String encryptedBase64 = Base64.getEncoder().encodeToString(encryptedBytes);
         metadata.addProperty(KEY, encryptedBase64);
 
         byte[] freshnessBytes = Instant.now().toString().getBytes();
-        byte[] encryptedFreshness = rsa_encrypt_public(freshnessBytes, userPublic);
+        byte[] encryptedFreshness = rsa_encrypt(freshnessBytes, userPublic);
         String freshnessEncoded = Base64.getEncoder().encodeToString(encryptedFreshness);
         metadata.addProperty(REFRESH_TOKEN, freshnessEncoded);
 
