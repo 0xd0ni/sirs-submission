@@ -53,6 +53,7 @@ config.vm.define "server" do |mgvb|
   mgvb.vm.box = "kalilinux/rolling"
   mgvb.vm.hostname = "server"
   mgvb.vm.network :private_network, ip: "192.168.56.11",virtualbox__intnet: "sw-1"
+  mgvb.vm.network "private_network", type: "dhcp"
   # Provider Virtualbox
   mgvb.vm.provider "virtualbox" do |vb|
     vb.name = "server"

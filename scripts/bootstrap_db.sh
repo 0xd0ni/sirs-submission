@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 
 export DEBIAN_FRONTEND=noninteractive
-sudo apt-get install gnupg
-wget -qO - https://www.mongodb.org/static/pgp/server-4.2.asc | sudo apt-key add -
-echo "deb http://repo.mongodb.org/apt/debian buster/mongodb-org/4.2 main" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.2.list
 sudo apt-get update -y
-sudo apt-get install -y mongodb-org
 sudo apt-get -y install maven
 sudo apt-get -y install openssl
 sudo apt-get -y install default-jdk
-#setxkbmap -model abnt2 -layout pt
-#sudo ifconfig eth0 192.168.56.11/24 up
+curl -O http://downloads.mongodb.org/linux/mongodb-linux-x86_64-2.2.7.tgz
+tar -zxvf mongodb-linux-x86_64-2.2.7.tgz
+mkdir -p mongodb
+cp -R -n mongodb-linux-x86_64-2.2.7/ mongodb
+mkdir -p mongodb/data/db
+rm -r mongodb-linux-x86_64-2.2.7
+rm -rf mongodb-linux-x86_64-2.2.7.tgz
+# para correr o mongo: sudo ./mongodb/bin/mongod --dbpath ./mongodb/data/db
