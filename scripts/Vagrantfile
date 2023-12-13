@@ -29,10 +29,10 @@ Vagrant.configure("2") do |config|
     # Provider Virtualbox
     mgvb.vm.provider "virtualbox" do |vb|
       vb.name = "db"
-      vb.customize ["modifyvm", :id, "--nicpromisc2", "allow-vms"]
       vb.memory = "2048"
       vb.cpus = 1
       vb.gui=false
+      vb.customize ["modifyvm", :id, "--nicpromisc2", "allow-vms"]
     end # of vb
     # Shared folders
     if Vagrant::Util::Platform.windows? then
@@ -53,10 +53,14 @@ config.vm.define "server" do |mgvb|
   mgvb.vm.box = "kalilinux/rolling"
   mgvb.vm.hostname = "server"
   mgvb.vm.network :private_network, ip: "192.168.56.11",virtualbox__intnet: "sw-1"
+  mgvb.vm.network :private_network, ip: "192.168.56.11",virtualbox__intnet: "sw-2"
+  mgvb.vm.network "forwarded_port", guest: 22, host: 2222, auto_correct: true
   # Provider Virtualbox
   mgvb.vm.provider "virtualbox" do |vb|
     vb.name = "server"
+    vb.customize ["modifyvm", :id, "--nic4", "nat"]
     vb.customize ["modifyvm", :id, "--nicpromisc2", "allow-vms"]
+    vb.customize ["modifyvm", :id, "--nicpromisc3", "allow-vms"]
     vb.memory = "2048"
     vb.cpus = 1
     vb.gui=false
@@ -79,11 +83,13 @@ end
 config.vm.define "client" do |mgvb|
   mgvb.vm.box = "kalilinux/rolling"
   mgvb.vm.hostname = "client"
-  mgvb.vm.network :private_network, ip: "192.168.56.12"
+  mgvb.vm.network :private_network, ip: "192.168.56.12",virtualbox__intnet: "sw-2"
+  mgvb.vm.network "forwarded_port", guest: 22, host: 2222, auto_correct: true
   # Provider Virtualbox
   mgvb.vm.provider "virtualbox" do |vb|
     vb.name = "client"
-    vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+    vb.customize ["modifyvm", :id, "--nic3", "nat"]
+    vb.customize ["modifyvm", :id, "--nicpromisc2", "allow-vms"]
     vb.memory = "2048"
     vb.cpus = 1
     vb.gui=false
