@@ -1,4 +1,5 @@
 package main.java.pt.tecnico.a01.cryptography;
+
 import java.io.*;
 import java.util.*;
 import java.security.KeyPair;
@@ -6,17 +7,22 @@ import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.NoSuchAlgorithmException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.security.SecureRandom;
+
 import java.time.Instant;
 import java.lang.reflect.Type;
 
 import javax.crypto.spec.SecretKeySpec;
 
 import javax.crypto.Cipher;
+import javax.crypto.NoSuchPaddingException;
 import java.security.Key;
 import java.security.KeyFactory;
 
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.KeyGenerator;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -29,11 +35,9 @@ import com.google.gson.reflect.TypeToken;
 
 public class CryptoLibrary {
 
-
-
-	// mapping of cryptographic algorithms and correspondent MediTrack field
-	public static final String[] AES_FIELDS = {"name", "sex", "consultationRecords"};
-	public static final String[] RSA_FIELDS = {"dateOfBirth", "bloodType", "knownAllergies"};
+	// main fields of a patient's medical record
+	public static final String[] FIELDS = {"name", "sex","dateOfBirth", "bloodType", "knownAllergies",
+                                           "consultationRecords"};
     public static final String[] AES_FIELDS_ORDERING = {"name", "sex"};
     public static final String[] AES_FIELD_ORDERING = {"consultationRecords"};
     
@@ -53,7 +57,6 @@ public class CryptoLibrary {
     private static final String KNOWN_ALLERGIES = "knownAllergies";
     
     private static final String MESSAGE_JSON_OBJECT = "JSON object: ";
-    private static final String MESSAGE_CIPHER = "Ciphering with ";
     private static final String MESSAGE_READ_PUBLIC_KEY = "Reading public key from file ";
     private static final String MESSAGE_READ_PRIVATE_KEY = "Reading private key from file ";
     private static final String MESSAGE_PREFIX_CHECK = "[MediTrack (check)]: ";
@@ -62,6 +65,15 @@ public class CryptoLibrary {
     private static final String FRESH = "fresh";
     private static final String STALE = "stale";
 
+
+    private static final String INITIALIZATION_VECTOR = "iv";
+    private static final String MESSAGE_CIPHER = "Ciphering with ";
+    private static final String MESSAGE_DECIPHER = "Deciphering with ";
+    private static final String ALGORITHM_AES = "AES";
+    private static final String CIPHER_ALGO_AES = "AES/CBC/PKCS5Padding";
+    private static final String ALGORITHM_RSA = "RSA";
+    private static final String CIPHER_ALGO_RSA = "RSA/ECB/PKCS1Padding";
+    
     // --------------------------------------------------------------------------------------------
     //  Main operations
     // --------------------------------------------------------------------------------------------
@@ -87,15 +99,16 @@ public class CryptoLibrary {
         System.out.println(MESSAGE_JSON_OBJECT + rootJson);
         
         JsonObject protectedRecord = new JsonObject();
+        JsonObject metadata = new JsonObject();
 
         // generates a symmetric encryption key 
         Key key = generateKeyAES();
 
         // encrypts the core data format
-        JsonObject record = encryptRecord(rootJson.get(PATIENT).getAsJsonObject(), key, userPublic);
+        JsonObject record = encryptRecord(rootJson.get(PATIENT).getAsJsonObject(), key, metadata);
         // computes and encrypts the metadata linked to the patient's record - (core data format)
-        JsonObject metadata = encryptMetadata(key, userPublic, serverPrivate, record);
-     
+        encryptMetadata(metadata,key, userPublic, serverPrivate, record);
+
         protectedRecord.add(RECORD,record);
         protectedRecord.add(METADATA,metadata);
         
@@ -127,7 +140,9 @@ public class CryptoLibrary {
        
         // decrypts the secured document
         JsonObject unprotectedRecord = decryptRecord(rootJson.get(METADATA).getAsJsonObject().get(KEY).getAsString(),
-                                       rootJson.get(RECORD).getAsJsonObject(), userPrivate);
+                                       rootJson.get(RECORD).getAsJsonObject(),
+                                       rootJson.get(METADATA).getAsJsonObject().get(
+                                        INITIALIZATION_VECTOR).getAsJsonObject(), userPrivate);
 
         patient.add(PATIENT, unprotectedRecord);
         writeJsonObjectToFile(patient, outputFile);
@@ -181,17 +196,17 @@ public class CryptoLibrary {
      *
      * @param  bytes     The byte array to be encrypted. This should not be null.
      * @param  key       The encryption key used for AES encryption. This should be a valid key for AES algorithm.
+     * @param  iv        TODO:
      * @return           The encrypted byte array.
      * @throws Exception If any error occurs during the encryption process. 
      *                  
      * 
      */
-    public static byte[] aes_encrypt(byte[] bytes, Key key) throws Exception{
+    public static byte[] aesEncryptWithIV(byte[] bytes, Key key, IvParameterSpec iv) throws Exception{
         // cipher data
-        final String CIPHER_ALGO = "AES/ECB/PKCS5Padding";
-        System.out.println(MESSAGE_CIPHER + CIPHER_ALGO + "...");
-        Cipher cipher = Cipher.getInstance(CIPHER_ALGO);
-        cipher.init(Cipher.ENCRYPT_MODE, key);
+        System.out.println(MESSAGE_CIPHER + CIPHER_ALGO_AES + "...");
+        Cipher cipher = Cipher.getInstance(CIPHER_ALGO_AES);
+        cipher.init(Cipher.ENCRYPT_MODE, key, iv);
         byte[] cipherBytes = cipher.doFinal(bytes);
         return cipherBytes;
     }
@@ -206,17 +221,17 @@ public class CryptoLibrary {
      *
      * @param  bytes     The byte array to be decrypted. This should not be null.
      * @param  key       The decryption key used for AES decryption.
+     * @param iv         TODO:
      * @return           The decrypted byte array.
      * @throws Exception If any error occurs during the decryption process. 
      *                  
      * 
      */
-    public static byte[] aes_decrypt(byte[] bytes, Key key) throws Exception{
-        // cipher data
-        final String CIPHER_ALGO = "AES/ECB/PKCS5Padding";
-        System.out.println(MESSAGE_CIPHER + CIPHER_ALGO + "...");
-        Cipher cipher = Cipher.getInstance(CIPHER_ALGO);
-        cipher.init(Cipher.DECRYPT_MODE, key);
+    public static byte[] AesDecryptWithIV(byte[] bytes, Key key, byte[] iv) throws Exception{
+        // decipher data
+        System.out.println(MESSAGE_DECIPHER + CIPHER_ALGO_AES + "...");
+        Cipher cipher = Cipher.getInstance(CIPHER_ALGO_AES);
+        cipher.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(iv));
         byte[] decipheredBytes = cipher.doFinal(bytes);
         return decipheredBytes;
     }
@@ -236,7 +251,7 @@ public class CryptoLibrary {
      *                  
      * 
      */
-    public static byte[] rsa_encrypt(byte[] bytes, Key key) throws Exception{
+    public static byte[] rsaEncrypt(byte[] bytes, Key key) throws Exception{
         // cipher data
         final String CIPHER_ALGO = "RSA/ECB/PKCS1Padding";
         System.out.println(MESSAGE_CIPHER + CIPHER_ALGO + "...");
@@ -261,12 +276,61 @@ public class CryptoLibrary {
      *                  
      * 
      */
-    public static byte[] rsa_decrypt(byte[] bytes, Key key) throws Exception{
+    public static byte[] rsaDecrypt(byte[] bytes, Key key) throws Exception{
         // cipher data
-        final String CIPHER_ALGO = "RSA/ECB/PKCS1Padding";
-        System.out.println(MESSAGE_CIPHER + CIPHER_ALGO + "...");
-        Cipher cipher = Cipher.getInstance(CIPHER_ALGO);
+        System.out.println(MESSAGE_DECIPHER + CIPHER_ALGO_RSA + "...");
+        Cipher cipher = Cipher.getInstance(CIPHER_ALGO_RSA);
         cipher.init(Cipher.DECRYPT_MODE, key);
+        byte[] decipheredBytes = cipher.doFinal(bytes);
+        return decipheredBytes;
+    }
+
+    /**
+     * Encrypts the given byte array using the RSA encryption algorithm.
+     * 
+     * This method uses the RSA encryption algorithm with ECB (Electronic Codebook) mode and PKCS5 padding scheme.
+     * It initializes a Cipher instance with the specified Key in encryption mode and processes the input byte array
+     * to produce the encrypted byte array.
+     *
+     *
+     * @param  bytes     The byte array to be encrypted. This should not be null.
+     * @param  key       The encryption key used for RSA encryption. 
+     * @param  iv        TODO:
+     * @return           The encrypted byte array.
+     * @throws Exception If any error occurs during the decryption process. 
+     *                  
+     * 
+     */
+    public static byte[] rsaEncryptWithIV(byte[] bytes, Key key, IvParameterSpec iv) throws Exception{
+        // cipher data
+        System.out.println(MESSAGE_CIPHER + CIPHER_ALGO_RSA + "...");
+        Cipher cipher = Cipher.getInstance(CIPHER_ALGO_RSA);
+        cipher.init(Cipher.ENCRYPT_MODE, key, iv);
+        byte[] cipherBytes = cipher.doFinal(bytes);
+        return cipherBytes;
+    }
+
+    /**
+     * Decrypts the given byte array using the RSA decryption algorithm.
+     * 
+     * This method uses the RSA decryption algorithm with ECB (Electronic Codebook) mode and PKCS5 padding scheme.
+     * It initializes a Cipher instance with the specified Key in decryption mode and processes the input byte array
+     * to produce the encrypted byte array.
+     *
+     *
+     * @param  bytes     The byte array to be decrypted. This should not be null.
+     * @param  key       The decryption key used for RSA encryption. 
+     * @param iv         TODO:
+     * @return           The decrypted byte array.
+     * @throws Exception If any error occurs during the decryption process. 
+     *                  
+     * 
+     */
+    public static byte[] rsaDecryptWithIV(byte[] bytes, Key key, byte[] iv) throws Exception{
+        // cipher data
+        System.out.println(MESSAGE_DECIPHER + CIPHER_ALGO_RSA + "...");
+        Cipher cipher = Cipher.getInstance(CIPHER_ALGO_RSA);
+        cipher.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(iv));
         byte[] decipheredBytes = cipher.doFinal(bytes);
         return decipheredBytes;
     }
@@ -297,10 +361,10 @@ public class CryptoLibrary {
      * @throws Exception     If any I/O or key generation error occurs.
      */
     public static Key readPrivateKey(String filename) throws Exception {
-         System.out.println(MESSAGE_READ_PRIVATE_KEY + filename + " ...");
+        System.out.println(MESSAGE_READ_PRIVATE_KEY + filename + " ...");
         byte[] privEncoded = readFile(filename);
         PKCS8EncodedKeySpec privSpec = new PKCS8EncodedKeySpec(privEncoded);
-        KeyFactory keyFacPriv = KeyFactory.getInstance("RSA");
+        KeyFactory keyFacPriv = KeyFactory.getInstance(ALGORITHM_RSA);
         PrivateKey priv = keyFacPriv.generatePrivate(privSpec);
         return priv;
     }
@@ -316,7 +380,7 @@ public class CryptoLibrary {
         System.out.println(MESSAGE_READ_PUBLIC_KEY + filename + " ...");
         byte[] pubEncoded = readFile(filename);
         X509EncodedKeySpec pubSpec = new X509EncodedKeySpec(pubEncoded);
-        KeyFactory keyFacPub = KeyFactory.getInstance("RSA");
+        KeyFactory keyFacPub = KeyFactory.getInstance(ALGORITHM_RSA);
         PublicKey pub = keyFacPub.generatePublic(pubSpec);
         return pub;
     }
@@ -332,7 +396,7 @@ public class CryptoLibrary {
      */
     public static Key generateKeyAES() throws Exception {
         // Create a KeyGenerator instance for the AES encryption algorithm
-        KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+        KeyGenerator keyGen = KeyGenerator.getInstance(ALGORITHM_AES);
 
         // Initialize the KeyGenerator with a key size of 128 bits
         keyGen.init(128);
@@ -340,6 +404,21 @@ public class CryptoLibrary {
         // Generate and return the AES key
         Key key = keyGen.generateKey();
         return key;
+    }
+
+    /**
+     * TODO:
+     * 
+     * @param algorithm        
+     * @return            
+     * @throws Exception   
+     */
+    public static IvParameterSpec getIVSecureRandom(String algorithm) throws NoSuchAlgorithmException,
+                                  NoSuchPaddingException {
+        SecureRandom random = SecureRandom.getInstanceStrong();
+        byte[] iv = new byte[Cipher.getInstance(algorithm).getBlockSize()];
+        random.nextBytes(iv);
+        return new IvParameterSpec(iv);
     }
 
     // --------------------------------------------------------------------------------------------
@@ -381,7 +460,7 @@ public class CryptoLibrary {
      */
     public static String getRefreshToken(String freshnessEncoded,Key userPrivate) throws Exception {
         byte[] decodedRefreshToken = Base64.getDecoder().decode(freshnessEncoded); 
-        byte[] unencryptedRefreshToken = rsa_decrypt(decodedRefreshToken, userPrivate);
+        byte[] unencryptedRefreshToken = rsaDecrypt(decodedRefreshToken, userPrivate);
         String refreshToken = new String(unencryptedRefreshToken);
 
         return refreshToken;
@@ -421,7 +500,7 @@ public class CryptoLibrary {
     public static String digestAndBase64(JsonObject recordObject,Key serverPrivate) throws Exception {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         byte[] hash = digest.digest(gson.toJson(recordObject).getBytes("UTF-8"));
-        byte[] encryptedHash = rsa_encrypt(hash, serverPrivate);
+        byte[] encryptedHash = rsaEncrypt(hash, serverPrivate);
         String hashBase64 = Base64.getEncoder().encodeToString(encryptedHash);
 
         return hashBase64;
@@ -473,15 +552,13 @@ public class CryptoLibrary {
      * @return             The encrypted patient record.
      * @throws Exception   If an encryption error occurs.
      */
-    public static JsonObject encryptRecord(JsonObject patient, Key key, Key userPublic) throws Exception {
+    public static JsonObject encryptRecord(JsonObject patient, Key key, JsonObject metadata) throws Exception {
 
         JsonObject encryptedRecord = new JsonObject();
 
         // Encrypt fields using AES
-        encryptFields(patient, encryptedRecord, AES_FIELDS, key, true);
+        encryptFields(patient, encryptedRecord, metadata, FIELDS, key);
     
-        // Encrypt fields using RSA
-        encryptFields(patient, encryptedRecord, RSA_FIELDS, userPublic, false);
         
         return encryptedRecord;
     }
@@ -496,9 +573,9 @@ public class CryptoLibrary {
      * @param  useAes           Flag to determine encryption type (AES if true, RSA if false).
      * @throws Exception        If an encryption error occurs.
      */
-    private static void encryptFields(JsonObject patientObject, JsonObject encryptedRecord, String[] fields, 
-                        Key key, boolean useAes) throws Exception {
-
+    private static void encryptFields(JsonObject patientObject, JsonObject encryptedRecord, JsonObject metadata,
+                        String[] fields, Key key) throws Exception {
+        JsonObject iv = new JsonObject();
         for (String field : fields) 
         {
             byte[] bytes;
@@ -508,10 +585,14 @@ public class CryptoLibrary {
             } else {
                 bytes = patientObject.get(field).getAsString().getBytes();
             }
-            byte[] encryptedBytes = useAes ? aes_encrypt(bytes, key) : rsa_encrypt(bytes, key);
+            IvParameterSpec ivRandom = getIVSecureRandom(ALGORITHM_AES);
+            byte[] encryptedBytes = aesEncryptWithIV(bytes, key, ivRandom);
             String encryptedBase64 = Base64.getEncoder().encodeToString(encryptedBytes);
+            String ivBase64 = Base64.getEncoder().encodeToString(ivRandom.getIV());
             encryptedRecord.addProperty(field, encryptedBase64);
+            iv.addProperty(field, ivBase64);
         }
+        metadata.add(INITIALIZATION_VECTOR,iv);
     }
 
     /**
@@ -522,26 +603,22 @@ public class CryptoLibrary {
      * @param  useAes         Flag to determine encryption type (AES if true, RSA if false).
      * @return                The encrypted metadata.
      * @throws Exception      If an encryption error occurs.
-     */
-    public static JsonObject encryptMetadata(Key key, Key userPublic, Key serverPrivate,
-                             JsonObject encryptedRecord) throws Exception {
-
-        JsonObject metadata = new JsonObject();
+     */ 
+    public static void encryptMetadata(JsonObject metadata,Key key, Key userPublic, Key serverPrivate, JsonObject encryptedRecord) 
+                       throws Exception {
         
         byte[] bytes = key.getEncoded();
-        byte[] encryptedBytes = rsa_encrypt(bytes,userPublic);
+        byte[] encryptedBytes = rsaEncrypt(bytes, userPublic);
         String encryptedBase64 = Base64.getEncoder().encodeToString(encryptedBytes);
         metadata.addProperty(KEY, encryptedBase64);
 
         byte[] freshnessBytes = Instant.now().toString().getBytes();
-        byte[] encryptedFreshness = rsa_encrypt(freshnessBytes, userPublic);
+        byte[] encryptedFreshness = rsaEncrypt(freshnessBytes, userPublic);
         String freshnessEncoded = Base64.getEncoder().encodeToString(encryptedFreshness);
         metadata.addProperty(REFRESH_TOKEN, freshnessEncoded);
 
         String hashBase64 = digestAndBase64(encryptedRecord, serverPrivate);
         metadata.addProperty(HASH, hashBase64);
-
-        return metadata;
     }
 
     /**
@@ -553,22 +630,17 @@ public class CryptoLibrary {
      * @return             The decrypted patient record.
      * @throws Exception   If a decryption error occurs.
      */
-    public static JsonObject decryptRecord(String keyBase64, JsonObject record, Key userPrivate) throws Exception {
+    public static JsonObject decryptRecord(String keyBase64, JsonObject record, JsonObject iv,
+                             Key userPrivate) throws Exception {
 
         JsonObject decryptedRecord = new JsonObject();
 
         byte[] encryptedKey = Base64.getDecoder().decode(keyBase64);
-        byte[] decryptedKey = rsa_decrypt(encryptedKey, userPrivate);
-        Key key = new SecretKeySpec(decryptedKey, 0, decryptedKey.length, "AES");
+        byte[] decryptedKey = rsaDecrypt(encryptedKey, userPrivate);
+        Key key = new SecretKeySpec(decryptedKey, 0, decryptedKey.length, ALGORITHM_AES);
 
         // Decrypt fields using AES
-        decryptFields(record, decryptedRecord, AES_FIELDS_ORDERING, key, true);
-    
-        // Decrypt fields using RSA
-        decryptFields(record, decryptedRecord, RSA_FIELDS, userPrivate, false);
-
-        // Decrypt the consultationRecords field
-        decryptFields(record, decryptedRecord, AES_FIELD_ORDERING, key, true);
+        decryptFields(record, iv, decryptedRecord, FIELDS, key, true);
 
         return decryptedRecord;
     }
@@ -583,14 +655,16 @@ public class CryptoLibrary {
      * @param  useAes          Flag to determine encryption type (AES if true, RSA if false).
      * @throws Exception       If a decryption error occurs.
      */
-    private static void decryptFields(JsonObject recordObject, JsonObject decryptedRecord, String[] fields, Key key,
-                        boolean useAes) throws Exception {
+    private static void decryptFields(JsonObject recordObject, JsonObject iv, JsonObject decryptedRecord, 
+                        String[] fields, Key key, boolean useAes) throws Exception {
+
     
         for (String field : fields) 
         {   
             byte[] bytes = recordObject.get(field).getAsString().getBytes();
             byte[] decodedBytes = Base64.getDecoder().decode(bytes);
-            byte[] decryptedBytes = useAes ? aes_decrypt(decodedBytes, key) : rsa_decrypt(decodedBytes, key);
+            byte[] decodedIv = Base64.getDecoder().decode(iv.get(field).getAsString().getBytes());
+            byte[] decryptedBytes = AesDecryptWithIV(decodedBytes, key, decodedIv); 
 
             if (field.equals(CONSULTATION_RECORDS) || field.equals(KNOWN_ALLERGIES)) {
                 // this is necessary since consultationRecords and KnownAllergies have different formats
