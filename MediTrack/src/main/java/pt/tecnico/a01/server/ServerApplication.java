@@ -6,14 +6,19 @@ import static spark.Spark.*;
 public class ServerApplication {
 
 	public static void main(String[] args) {
-		MedicalRecordService medicalRecordService = new MedicalRecordService();
-		get("/:name", (req, res) -> {
-			return medicalRecordService.getMedicalRecord(req.params(":name"));
-		});
+		try {
+			MedicalRecordService medicalRecordService = new MedicalRecordService();
+			port(4000);
+			get("/:name", (req, res) -> {
+				return medicalRecordService.getMedicalRecord(req.params(":name"));
+			});
 
-		put("/:name", (req, res) -> {
-			return medicalRecordService.saveMedicalRecord(req.body());
-		});
+			put("/:name", (req, res) -> {
+				return medicalRecordService.saveMedicalRecord(req.body());
+			});
+		} catch(Exception e) {
+			System.out.println("Error starting server: " + e);
+		}
 	}
 	
 }

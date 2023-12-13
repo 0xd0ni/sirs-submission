@@ -8,7 +8,7 @@ import javafx.scene.Scene;
 import javafx.scene.layout.VBox;
 import javafx.scene.web.WebView;
 
-import com.squareup.okhttp.Request;
+import okhttp3.Request;
 
 public class Client extends Application {
 

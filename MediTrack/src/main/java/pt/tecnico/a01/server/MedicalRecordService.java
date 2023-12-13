@@ -1,12 +1,24 @@
 package main.java.pt.tecnico.a01.server;
 
+import main.java.pt.tecnico.a01.cryptography.CryptoLibrary;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+
+import java.security.Key;
+
 public class MedicalRecordService {
     
     private MedicalRecordRepository medicalRecordRepository;
 
-    public MedicalRecordService() {
-        this.medicalRecordRepository = new MedicalRecordRepository("mongodb://addr:","meditrack");
-        // load Keys
+    private Key userPublic;
+
+    private Gson gson;
+
+    public MedicalRecordService() throws Exception{
+        this.medicalRecordRepository = new MedicalRecordRepository("mongodb://localhost:27017","meditrack");
+        this.userPublic = CryptoLibrary.readPublicKey("../keys/user.pubkey");
+        this.gson = new Gson();
     }
 
     public String getMedicalRecord(String patientName) {
@@ -16,8 +28,8 @@ public class MedicalRecordService {
     }
 
     public String saveMedicalRecord(String medicalRecord) {
-        // todo: decrypt name
-        //medicalRecord.addProperty("name", medicalRecord.get());
+        JsonObject medicalRecordJson = gson.fromJson(medicalRecord, JsonObject.class);
+        medicalRecordJson.addProperty("name", gson.toJson(medicalRecordJson.get("metadata").getAsJsonObject().get("name")));
         return medicalRecordRepository.save(medicalRecord);
     }
 }
