@@ -610,7 +610,7 @@ public class CryptoLibrary {
     public static void encryptMetadata(JsonObject metadata, Key userPublic, Key serverPrivate, JsonObject encryptedRecord) 
                        throws Exception {
         
-        // encrypt
+        // Encrypt each patient's record field's AES symmetric key using the patient's public key.
         for (String field : FIELDS) 
         {
             byte[] bytes = metadata.get(KEYS).getAsJsonObject().get(field).getAsString().getBytes();
