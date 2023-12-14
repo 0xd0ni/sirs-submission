@@ -65,7 +65,6 @@ public class CryptoLibrary {
     private static final String FRESH = "fresh";
     private static final String STALE = "stale";
 
-
     private static final String INITIALIZATION_VECTOR = "iv";
     private static final String KEYS = "keys";
     private static final String MESSAGE_CIPHER = "Ciphering with ";
@@ -93,7 +92,7 @@ public class CryptoLibrary {
      * @param userPublic    The public key of the user, used to encrypt the core data format and part of the metadata.
      * @throws Exception    If any error occurs during file reading/writing or encryption processes.
      */
-    public static void protect(String inputFile, String outputFile, Key serverPrivate, Key userPublic) 
+    public static void protect(String inputFile, String outputFile, Key serverPrivate, Key userPublic, String... fields) 
         throws Exception {
 
         JsonObject rootJson = readFileToJsonObject(inputFile);
@@ -103,7 +102,7 @@ public class CryptoLibrary {
         JsonObject metadata = new JsonObject();
 
         // encrypts the core data format
-        JsonObject record = encryptRecord(rootJson.get(PATIENT).getAsJsonObject(), metadata);
+        JsonObject record = encryptRecord(rootJson.get(PATIENT).getAsJsonObject(), metadata, fields);
         // computes and encrypts the metadata linked to the patient's record - (core data format)
         encryptMetadata(metadata, userPublic, serverPrivate, record);
 
@@ -129,18 +128,19 @@ public class CryptoLibrary {
      * @param userPrivate   The private key of the user, used to decrypt the record
      * @throws Exception    If any error occurs during file reading/writing or encryption processes.
      */
-    public static void unprotect(String inputFile, String outputFile, Key userPrivate) throws Exception {
-        
-        JsonObject rootJson = readFileToJsonObject(inputFile);
+    public static void unprotect(String inputFile, String outputFile, Key userPrivate, String... args) throws Exception {
+
+        JsonObject rootJson = readFileToJsonObject(inputFile); 
         System.out.println(MESSAGE_JSON_OBJECT + rootJson);
 
         JsonObject patient = new JsonObject();
-       
+
         // decrypts the secured document
-        JsonObject unprotectedRecord = decryptRecord(rootJson.get(METADATA).getAsJsonObject().get(KEY).getAsString(),
-                                       rootJson.get(RECORD).getAsJsonObject(),
+        JsonObject unprotectedRecord = decryptRecord(rootJson.get(RECORD).getAsJsonObject(),
                                        rootJson.get(METADATA).getAsJsonObject().get(
-                                        INITIALIZATION_VECTOR).getAsJsonObject(), userPrivate);
+                                       INITIALIZATION_VECTOR).getAsJsonObject(), 
+                                       rootJson.get(METADATA).getAsJsonObject().get(
+                                       KEYS).getAsJsonObject(), userPrivate, args);
 
         patient.add(PATIENT, unprotectedRecord);
         writeJsonObjectToFile(patient, outputFile);
@@ -448,8 +448,8 @@ public class CryptoLibrary {
     }
     
 
-    /** Decodes and Decrypts a each byte of two separate Base64 hashes in order to verify if they both correspond to the same
-     *  record
+    /** Decodes and Decrypts a each byte of two separate Base64 hashes in order to verify if they both correspond to the 
+     * same record
      * 
      * @param  freshnessEncoded 
      * @param  userPrivate     
@@ -550,12 +550,17 @@ public class CryptoLibrary {
      * @return             The encrypted patient record.
      * @throws Exception   If an encryption error occurs.
      */
-    public static JsonObject encryptRecord(JsonObject patient, JsonObject metadata) throws Exception {
+    public static JsonObject encryptRecord(JsonObject patient, JsonObject metadata, String... fields) throws Exception {
 
         JsonObject encryptedRecord = new JsonObject();
 
-        // Encrypt fields using AES
-        encryptFields(patient, encryptedRecord, metadata, FIELDS);
+        if(fields.length == 0) {
+            // Encrypt all fields using AES
+            encryptFields(patient, encryptedRecord, metadata, FIELDS);
+        } else {
+            encryptFields(patient, encryptedRecord, metadata, fields);
+        }
+      
     
         
         return encryptedRecord;
@@ -637,18 +642,19 @@ public class CryptoLibrary {
      * @return             The decrypted patient record.
      * @throws Exception   If a decryption error occurs.
      */
-    public static JsonObject decryptRecord(String keyBase64, JsonObject record, JsonObject iv,
-                             Key userPrivate) throws Exception {
+    public static JsonObject decryptRecord(JsonObject record, JsonObject iv, JsonObject keys,
+                             Key userPrivate, String... fields) throws Exception {
 
         JsonObject decryptedRecord = new JsonObject();
 
-        byte[] encryptedKey = Base64.getDecoder().decode(keyBase64);
-        byte[] decryptedKey = rsaDecrypt(encryptedKey, userPrivate);
-        Key key = new SecretKeySpec(decryptedKey, 0, decryptedKey.length, ALGORITHM_AES);
-
-        // Decrypt fields using AES
-        decryptFields(record, iv, decryptedRecord, FIELDS, key, true);
-
+        
+        if(fields.length == 0) {
+            // Decrypt all fields using AES
+            decryptFields(record, iv, keys, decryptedRecord, userPrivate, FIELDS);
+        } else {
+            decryptFields(record, iv, keys, decryptedRecord, userPrivate, fields);    
+        }
+        
         return decryptedRecord;
     }
 
@@ -658,16 +664,22 @@ public class CryptoLibrary {
      * @param  recordObject    JsonObject containing data to decrypt.
      * @param  decryptedRecord JsonObject to store decrypted data.
      * @param  fields          Array of field names to be decrypted.
-     * @param  key             Encryption key.
-     * @param  useAes          Flag to determine encryption type (AES if true, RSA if false).
+     * @param  userPrivate     decryption key.
+     * 
+
      * @throws Exception       If a decryption error occurs.
      */
-    private static void decryptFields(JsonObject recordObject, JsonObject iv, JsonObject decryptedRecord, 
-                        String[] fields, Key key, boolean useAes) throws Exception {
+    private static void decryptFields(JsonObject recordObject, JsonObject iv, JsonObject keys, 
+                        JsonObject decryptedRecord, Key userPrivate, String[] fields) throws Exception {
 
-    
+        System.out.println("decryptFields ?? here \n");                   
         for (String field : fields) 
         {   
+            System.out.println("FIELDS" + field);
+            byte[] encryptedKey = Base64.getDecoder().decode(keys.get(field).getAsString());
+            byte[] decryptedKey = rsaDecrypt(encryptedKey, userPrivate);
+            Key key = new SecretKeySpec(decryptedKey, 0, decryptedKey.length, ALGORITHM_AES);
+
             byte[] bytes = recordObject.get(field).getAsString().getBytes();
             byte[] decodedBytes = Base64.getDecoder().decode(bytes);
             byte[] decodedIv = Base64.getDecoder().decode(iv.get(field).getAsString().getBytes());
