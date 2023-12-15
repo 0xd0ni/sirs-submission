@@ -396,6 +396,8 @@ public class CryptoLibrary {
         // Create a KeyGenerator instance for the AES encryption algorithm
         KeyGenerator keyGen = KeyGenerator.getInstance(ALGORITHM_AES);
 
+
+        // DEBUG: 128 bits - 16bytes I want a 16 bytes keys not a 28 bytes
         // Initialize the KeyGenerator with a key size of 128 bits
         keyGen.init(128);
 
@@ -560,9 +562,6 @@ public class CryptoLibrary {
         } else {
             encryptFields(patient, encryptedRecord, metadata, fields);
         }
-      
-    
-        
         return encryptedRecord;
     }
 
@@ -578,7 +577,7 @@ public class CryptoLibrary {
      */
     private static void encryptFields(JsonObject patientObject, JsonObject encryptedRecord, JsonObject metadata,
                         String[] fields) throws Exception {
-                 // generates a symmetric encryption key                 
+        // generates a symmetric encryption key                 
         JsonObject iv = new JsonObject();
         JsonObject keys = new JsonObject();
         for (String field : fields) 
@@ -597,7 +596,8 @@ public class CryptoLibrary {
             String ivBase64 = Base64.getEncoder().encodeToString(ivRandom.getIV());
             encryptedRecord.addProperty(field, encryptedBase64);
             iv.addProperty(field, ivBase64);
-            keys.addProperty(field, new String(key.getEncoded()));
+            String keyEncoded = Base64.getEncoder().encodeToString(key.getEncoded());
+            keys.addProperty(field, keyEncoded);
         }
         metadata.add(INITIALIZATION_VECTOR,iv);
         metadata.add(KEYS,keys);
@@ -616,10 +616,15 @@ public class CryptoLibrary {
                        throws Exception {
         
         // Encrypt each patient's record field's AES symmetric key using the patient's public key.
+
         for (String field : FIELDS) 
         {
-            byte[] bytes = metadata.get(KEYS).getAsJsonObject().get(field).getAsString().getBytes();
-            byte[] encryptedBytes = rsaEncrypt(bytes, userPublic);
+            if(metadata.get(KEYS).getAsJsonObject().get(field) == null) {
+                continue;
+            }
+            byte[] decodedKeyBytes = Base64.getDecoder().decode(
+                                     metadata.get(KEYS).getAsJsonObject().get(field).getAsString());
+            byte[] encryptedBytes = rsaEncrypt(decodedKeyBytes, userPublic);
             String encryptedBase64 = Base64.getEncoder().encodeToString(encryptedBytes);
             metadata.get(KEYS).getAsJsonObject().addProperty(field, encryptedBase64);
       
@@ -671,11 +676,9 @@ public class CryptoLibrary {
      */
     private static void decryptFields(JsonObject recordObject, JsonObject iv, JsonObject keys, 
                         JsonObject decryptedRecord, Key userPrivate, String[] fields) throws Exception {
-
-        System.out.println("decryptFields ?? here \n");                   
+                  
         for (String field : fields) 
         {   
-            System.out.println("FIELDS" + field);
             byte[] encryptedKey = Base64.getDecoder().decode(keys.get(field).getAsString());
             byte[] decryptedKey = rsaDecrypt(encryptedKey, userPrivate);
             Key key = new SecretKeySpec(decryptedKey, 0, decryptedKey.length, ALGORITHM_AES);
