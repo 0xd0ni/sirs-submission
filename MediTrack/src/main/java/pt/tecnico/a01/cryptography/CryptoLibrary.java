@@ -396,6 +396,8 @@ public class CryptoLibrary {
         // Create a KeyGenerator instance for the AES encryption algorithm
         KeyGenerator keyGen = KeyGenerator.getInstance(ALGORITHM_AES);
 
+
+        // DEBUG: 128 bits - 16bytes I want a 16 bytes keys not a 28 bytes
         // Initialize the KeyGenerator with a key size of 128 bits
         keyGen.init(128);
 
@@ -560,9 +562,6 @@ public class CryptoLibrary {
         } else {
             encryptFields(patient, encryptedRecord, metadata, fields);
         }
-      
-    
-        
         return encryptedRecord;
     }
 
@@ -578,7 +577,7 @@ public class CryptoLibrary {
      */
     private static void encryptFields(JsonObject patientObject, JsonObject encryptedRecord, JsonObject metadata,
                         String[] fields) throws Exception {
-                 // generates a symmetric encryption key                 
+        // generates a symmetric encryption key                 
         JsonObject iv = new JsonObject();
         JsonObject keys = new JsonObject();
         for (String field : fields) 
@@ -597,7 +596,8 @@ public class CryptoLibrary {
             String ivBase64 = Base64.getEncoder().encodeToString(ivRandom.getIV());
             encryptedRecord.addProperty(field, encryptedBase64);
             iv.addProperty(field, ivBase64);
-            keys.addProperty(field, new String(key.getEncoded()));
+            String keyEncoded = Base64.getEncoder().encodeToString(key.getEncoded());
+            keys.addProperty(field, keyEncoded);
         }
         metadata.add(INITIALIZATION_VECTOR,iv);
         metadata.add(KEYS,keys);
@@ -616,10 +616,15 @@ public class CryptoLibrary {
                        throws Exception {
         
         // Encrypt each patient's record field's AES symmetric key using the patient's public key.
+
         for (String field : FIELDS) 
         {
-            byte[] bytes = metadata.get(KEYS).getAsJsonObject().get(field).getAsString().getBytes();
-            byte[] encryptedBytes = rsaEncrypt(bytes, userPublic);
+            if(metadata.get(KEYS).getAsJsonObject().get(field) == null) {
+                continue;
+            }
+            byte[] decodedKeyBytes = Base64.getDecoder().decode(
+                                     metadata.get(KEYS).getAsJsonObject().get(field).getAsString());
+            byte[] encryptedBytes = rsaEncrypt(decodedKeyBytes, userPublic);
             String encryptedBase64 = Base64.getEncoder().encodeToString(encryptedBytes);
             metadata.get(KEYS).getAsJsonObject().addProperty(field, encryptedBase64);
       
@@ -671,11 +676,9 @@ public class CryptoLibrary {
      */
     private static void decryptFields(JsonObject recordObject, JsonObject iv, JsonObject keys, 
                         JsonObject decryptedRecord, Key userPrivate, String[] fields) throws Exception {
-
-        System.out.println("decryptFields ?? here \n");                   
+                  
         for (String field : fields) 
         {   
-            System.out.println("FIELDS" + field);
             byte[] encryptedKey = Base64.getDecoder().decode(keys.get(field).getAsString());
             byte[] decryptedKey = rsaDecrypt(encryptedKey, userPrivate);
             Key key = new SecretKeySpec(decryptedKey, 0, decryptedKey.length, ALGORITHM_AES);
@@ -714,6 +717,159 @@ public class CryptoLibrary {
                 
             }        
         }
+    }
+
+    /**
+     * Decrypts specified fields of a patient's record using AES and RSA decryption.
+     * Expects a record that hasn't been encrypted with the user's key.
+     * Used by the server.
+     * 
+     * @param recordObject
+     * @param iv
+     * @param keys
+     * @param decryptedRecord
+     * @param fields
+     * @throws Exception
+     */
+    private static void decryptFields(JsonObject recordObject, JsonObject iv, JsonObject keys, 
+                        JsonObject decryptedRecord, String[] fields) throws Exception {
+                  
+        for (String field : fields) 
+        {   
+            byte[] keyBytes = Base64.getDecoder().decode(keys.get(field).getAsString());
+            Key key = new SecretKeySpec(keyBytes, 0, keyBytes.length, ALGORITHM_AES);
+
+            byte[] bytes = recordObject.get(field).getAsString().getBytes();
+            byte[] decodedBytes = Base64.getDecoder().decode(bytes);
+            byte[] decodedIv = Base64.getDecoder().decode(iv.get(field).getAsString().getBytes());
+            byte[] decryptedBytes = AesDecryptWithIV(decodedBytes, key, decodedIv); 
+
+            if (field.equals(CONSULTATION_RECORDS) || field.equals(KNOWN_ALLERGIES)) {
+                // this is necessary since consultationRecords and KnownAllergies have different formats
+                // NOTE THAT:
+                // - consultationRecords comprises an array of JsonObjects, where each JsonObject represents 
+                //   a consultation record. 
+                // - knownAllergies, on the other hand, is an array of Strings, with each string representing 
+                //   a specific allergy.
+                // Example structures:
+                // "consultationRecords": [
+                //     {
+                //         "date": "example_date",
+                //         "medicalSpeciality": "example_speciality",
+                //         "doctorName": "example_name",
+                //         "practice": "example_practice",
+                //         "treatmentSummary": "example_summary"
+                //     },
+                //     ... (more records)
+                // ]
+                //
+                // "knownAllergies": ["allergy1", ... (more allergies)]
+                Type listType = field.equals(CONSULTATION_RECORDS) ? new TypeToken<List<JsonObject>>() {}.getType() : 
+                                new TypeToken<List<String>>() {}.getType();
+                List<String> compositeRecords = gson.fromJson(new String(decryptedBytes), listType);
+                decryptedRecord.add(field, gson.toJsonTree(compositeRecords));
+            } else {
+                decryptedRecord.addProperty(field, new String(decryptedBytes));
+                
+            }        
+        }
+    }
+
+    public static JsonObject protect(JsonObject record, Key serverPrivate, Key userPublic, String... fields) throws Exception {
+        System.out.println(MESSAGE_JSON_OBJECT + record);
+        
+        JsonObject protectedRecord = new JsonObject();
+        JsonObject metadata = new JsonObject();
+
+        // encrypts the core data format
+        JsonObject encryptedRecord = encryptRecord(record.get(PATIENT).getAsJsonObject(), metadata, fields);
+        // computes and encrypts the metadata linked to the patient's record - (core data format)
+        encryptMetadata(metadata, userPublic, serverPrivate, encryptedRecord);
+
+        protectedRecord.add(RECORD,encryptedRecord);
+        protectedRecord.add(METADATA,metadata);
+        
+        return protectedRecord;
+    }
+
+    public static JsonObject unprotect(JsonObject record, Key userPrivate, String... args) throws Exception {
+        System.out.println(MESSAGE_JSON_OBJECT + record);
+
+        JsonObject patient = new JsonObject();
+
+        // decrypts the secured document
+        JsonObject unprotectedRecord = decryptRecord(record.get(RECORD).getAsJsonObject(),
+                                       record.get(METADATA).getAsJsonObject().get(
+                                       INITIALIZATION_VECTOR).getAsJsonObject(), 
+                                       record.get(METADATA).getAsJsonObject().get(
+                                       KEYS).getAsJsonObject(), userPrivate, args);
+
+        patient.add(PATIENT, unprotectedRecord);
+        return patient;
+    }
+    
+    /**
+     * Encrypts specified fields of a patient's record using AES but doesn't encrypt the keys.
+     * Used by the server.
+     * 
+     * @param record
+     * @param serverPrivate
+     * @param fields
+     * @return
+     * @throws Exception
+     */
+    public static JsonObject protect(JsonObject record, String... fields) throws Exception {
+        System.out.println(MESSAGE_JSON_OBJECT + record);
+        
+        JsonObject protectedRecord = new JsonObject();
+        JsonObject metadata = new JsonObject();
+
+        // encrypts the core data format
+        JsonObject encryptedRecord = encryptRecord(record.get(PATIENT).getAsJsonObject(), metadata, fields);
+        // computes and encrypts the metadata linked to the patient's record - (core data format)
+
+        protectedRecord.add(RECORD,encryptedRecord);
+        protectedRecord.add(METADATA,metadata);
+        return protectedRecord;
+    }
+
+    /**
+     * Decrypts specified fields of a patient's record.
+     * Expects a record that hasn't been encrypted with the user's key.
+     * Used by the server.
+     * 
+     * @param record A record whose keys aren't encrypted
+     * @param serverPrivate
+     * @param fields
+     * @return
+     * @throws Exception
+     */
+    public static JsonObject unprotect(JsonObject record, String... args) throws Exception {
+        System.out.println(MESSAGE_JSON_OBJECT + record);
+
+        JsonObject patient = new JsonObject();
+
+        // decrypts the secured document
+        JsonObject unprotectedRecord = new JsonObject();
+
+        
+        if(args.length == 0) {
+            // Decrypt all fields using AES
+            decryptFields(record.get(RECORD).getAsJsonObject(),
+                record.get(METADATA).getAsJsonObject().get(INITIALIZATION_VECTOR).getAsJsonObject(),
+                record.get(METADATA).getAsJsonObject().get(KEYS).getAsJsonObject(),
+                unprotectedRecord,
+                FIELDS);
+        } else {
+            decryptFields(record.get(RECORD).getAsJsonObject(),
+                record.get(METADATA).getAsJsonObject().get(INITIALIZATION_VECTOR).getAsJsonObject(),
+                record.get(METADATA).getAsJsonObject().get(KEYS).getAsJsonObject(),
+                unprotectedRecord,
+                args);
+        }
+
+        patient.add(PATIENT, unprotectedRecord);
+        return patient;
     }
 
 }
