@@ -7,6 +7,8 @@ import com.google.gson.JsonObject;
 
 import org.apache.commons.cli.*;
 
+import java.security.Key;
+
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Call;
@@ -17,11 +19,15 @@ import okhttp3.FormBody;
 
 public class ClientSession {
 
-    private OkHttpClient client = new OkHttpClient();
-
     private Gson gson = new Gson();
 
     private String serverAddress;
+
+    private ClientHttp clientHttp;
+
+    private Key userPrivate;
+    // If we wish to have different users the key will need to be changed on login
+
 
     private final String RUNTIME = "runtime";
     private final String PATIENT = "patient";
@@ -29,10 +35,12 @@ public class ClientSession {
     private final String ADMIN = "admin";
     private final String QUIT = "quit";
 
+    private boolean discloseName = false;
     private boolean discloseSex = false;
     private boolean discloseDateOfBirth = false;
     private boolean discloseBloodtype = false;
     private boolean discloseKnownAllergies = false;
+    private boolean discloseConsultationRecords = false;
 
     private JsonObject record;
 
@@ -68,6 +76,7 @@ public class ClientSession {
         CommandLine cmd;
         try {
             cmd = parser.parse(options, args);
+            this.userPrivate = CryptoLibrary.readPrivateKey("../keys/user.privkey");
         } catch (Exception e) {
             System.err.println("Error parsing command");
             return;
@@ -75,19 +84,20 @@ public class ClientSession {
         if (cmd.hasOption("help")) {
             HelpFormatter formatter = new HelpFormatter();
             formatter.printHelp("MediTrack", options);
-            System.out.println(" ");
+            System.out.println();
             System.out.println("For runtime: ");
-            formatter.printHelp("MediTrack", runtimeOptions);
-            System.out.println(" ");
+            formatter.printHelp("", runtimeOptions);
+            System.out.println();
             System.out.println("For patient mode: ");
-            formatter.printHelp("MediTrack", patientOptions);
+            formatter.printHelp("", patientOptions);
             return;
         }
         if (!cmd.hasOption("address")) {
             System.out.println("Error: Missing address");
             return;
         }
-        serverAddress = cmd.getOptionValue("address");
+        this.serverAddress = cmd.getOptionValue("address");
+        this.clientHttp = new ClientHttp(serverAddress);
         String mode = RUNTIME; // modes: runtime, patient, doctor, admin
         while (true) {
             String[] command = System.console().readLine().split(" ", 0);
@@ -119,15 +129,16 @@ public class ClientSession {
             cmd = parser.parse(this.runtimeOptions, args);
         } catch (Exception e) {
             System.err.println("Error parsing command");
-            return QUIT;
+            return RUNTIME;
         }
         if (cmd.hasOption("register")) {
             String patientName = cmd.getOptionValue("register");
+            // where do we get the record from?
             return PATIENT;
 
         } else if (cmd.hasOption("show")) {
             String patientName = cmd.getOptionValue("show");
-            String record = this.getRecordAsPatient(patientName);
+            JsonObject record = this.clientHttp.getRecordAsPatient(patientName, userPrivate);
             // if successful set name
             return PATIENT;
         } else if (cmd.hasOption("quit")) {
@@ -152,9 +163,9 @@ public class ClientSession {
             return PATIENT;
         } else if (cmd.hasOption("show")) {
             String patientName = cmd.getOptionValue("show");
-            String record = this.getRecordAsPatient(patientName);
+            JsonObject record = this.clientHttp.getRecordAsPatient(patientName, userPrivate);
             // if successful set name
-            printRecord(record);
+            this.clientHttp.printRecord(record);
             
             return PATIENT;
         } else if (cmd.hasOption("protectField")) {
@@ -166,7 +177,7 @@ public class ClientSession {
             this.setPropertyToTrue(field);
             return PATIENT;
         } else if (cmd.hasOption("commit")) {
-            this.sendCommitRequest();
+            this.clientHttp.sendCommitRequest(patientName, discloseName, discloseSex, discloseDateOfBirth, discloseBloodtype, discloseKnownAllergies, discloseConsultationRecords);
             return PATIENT;
         } else if (cmd.hasOption("quit")) {
             return QUIT;
@@ -189,14 +200,16 @@ public class ClientSession {
     }
 
     public void resetDiscloseStatus() {
+        this.discloseName = false;
         this.discloseSex = false;
         this.discloseDateOfBirth = false;
         this.discloseBloodtype = false;
         this.discloseKnownAllergies = false;
+        this.discloseConsultationRecords = false;
     }
 
     public boolean doesPropertyExist(String property) {
-        if (property.equals("sex") || property.equals("dob") || property.equals("bloodtype") || property.equals("knownAllergies")) {
+        if (property.equals("sex") || property.equals("dateOfBirth") || property.equals("bloodType") || property.equals("knownAllergies")) {
             return true;
         }
         else {
@@ -205,92 +218,52 @@ public class ClientSession {
     }
 
     public void setPropertyToFalse(String property) {
-        if (property.equals("sex")) {
+        if (property.equals("name")) {
+            this.discloseName = false;
+        } else if (property.equals("sex")) {
             this.discloseSex = false;
-        } else if (property.equals("dob")) {
+        } else if (property.equals("dateOfBirth")) {
             this.discloseDateOfBirth = false;
-        } else if (property.equals("bloodtype")) {
+        } else if (property.equals("bloodType")) {
             this.discloseBloodtype = false;
         } else if (property.equals("knownAllergies")) {
             this.discloseKnownAllergies = false;
+        } else if (property.equals("consultationRecords")) {
+            this.discloseConsultationRecords = false;
         }
     }
 
     public void setPropertyToTrue(String property) {
-        if (property.equals("sex")) {
+        if (property.equals("name")) {
+            this.discloseName = true;
+        } else if (property.equals("sex")) {
             this.discloseSex = true;
-        } else if (property.equals("dob")) {
+        } else if (property.equals("dateOfBirth")) {
             this.discloseDateOfBirth = true;
-        } else if (property.equals("bloodtype")) {
+        } else if (property.equals("bloodType")) {
             this.discloseBloodtype = true;
         } else if (property.equals("knownAllergies")) {
             this.discloseKnownAllergies = true;
+        } else if (property.equals("consultationRecords")) {
+            this.discloseConsultationRecords = true;
         }
     }
 
     public void toggleProperty(String property) {
-        if (property.equals("sex")) {
+        if (property.equals("name")) {
+            this.discloseName = !this.discloseName;
+        } else if (property.equals("sex")) {
             this.discloseSex = !this.discloseSex;
-        } else if (property.equals("dob")) {
+        } else if (property.equals("dateOfBirth")) {
             this.discloseDateOfBirth = !this.discloseDateOfBirth;
         } else if (property.equals("bloodtype")) {
             this.discloseBloodtype = !this.discloseBloodtype;
         } else if (property.equals("knownAllergies")) {
             this.discloseKnownAllergies = !this.discloseKnownAllergies;
+        } else if (property.equals("consultationRecords")) {
+            this.discloseConsultationRecords = !this.discloseConsultationRecords;
         }
     } 
 
-    public String getRecordAsPatient(String name) {
-        try {
-            JsonObject encryptedrecord = this.getRecord(name);
-            //String record = CryptoLibrary.unprotect(record, CryptoLibrary.readPrivateKey("../keys/" + name + ".privkey"));
-            return "";
-        } catch (Exception e) {
-            
-            return "";            
-        }
-    }
-
-    public JsonObject getRecord(String name) throws Exception {
-        Request request = new Request.Builder()
-            .url("http://" + this.serverAddress + "/" + name)
-            .build();
-        Call call = client.newCall(request);
-        Response response = call.execute();
-        if (response.code() != 200) {
-            throw new Exception("Error getting record: " + response.body().string());
-        }
-        return this.gson.fromJson(response.body().string(), JsonObject.class);
-    }
-
-    public void sendCommitRequest() {
-        RequestBody formBody = new FormBody.Builder()
-            .add("discloseSex", Boolean.toString(this.discloseSex))
-            .add("discloseDateOfBirth", Boolean.toString(this.discloseDateOfBirth))
-            .add("discloseBloodtype", Boolean.toString(this.discloseBloodtype))
-            .add("discloseKnownAllergies", Boolean.toString(this.discloseKnownAllergies))
-            .build();
-        Request request = new Request.Builder()
-            .url("http://" + this.serverAddress + "/commit/" + this.patientName)
-            .post(formBody)
-            .build();
-
-        Call call = client.newCall(request);
-        try {
-            Response response = call.execute();
-            if (response.code() != 200) {
-                System.out.println("Error sending commit request: " + response.body().string());
-            }
-            else {
-                System.out.println("Commit request sent successfully");
-            }
-        } catch (Exception e) {
-            System.out.println("Error sending commit request: " + e.getMessage());
-        }
-    }
-
-
-    public void printRecord(String record) {
-        
-    }
+    
 }

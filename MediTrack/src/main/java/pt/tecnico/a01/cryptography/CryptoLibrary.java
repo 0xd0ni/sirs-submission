@@ -159,18 +159,19 @@ public class CryptoLibrary {
      * @param userPrivate   The private key of the user, used to decrypt the record
      * @throws Exception    If any error occurs during file reading/writing or encryption processes.
      */
-    public static void check(String inputFile, Key serverPrivate, Key userPrivate) throws Exception {
+    public static void check(String inputFile, Key userPrivate) throws Exception {
 
         JsonObject rootJson = readFileToJsonObject(inputFile);
 
         JsonObject recordObject = rootJson.get(RECORD).getAsJsonObject();
 
         String storedHashBase64 = rootJson.get(METADATA).getAsJsonObject().get(HASH).getAsString();
-        String computedHashBase64 = digestAndBase64(recordObject, serverPrivate);
+        byte[] decryptedHash = rsaDecrypt(Base64.getDecoder().decode(storedHashBase64), userPrivate);
+        byte[] computedHash = createDigest(recordObject);
         String refreshTokenBase64 = rootJson.get(METADATA).getAsJsonObject().get(REFRESH_TOKEN).getAsString();
         String refreshToken =  getRefreshToken(refreshTokenBase64, userPrivate);
         
-        boolean integrityStatus = compareBase64Hashes(storedHashBase64, computedHashBase64);
+        boolean integrityStatus = compareHashes(decryptedHash, computedHash);
         boolean freshnessStatus = compareRefreshTokenInterval(refreshToken,FRESHNESS_RANGE);
 
         String statusMessage = String.format("%sstatus= `%s` - `%s`",
@@ -480,14 +481,12 @@ public class CryptoLibrary {
      * @return               A boolean that signals whether or not the received Base64 encoded Hashes are equal.
      * @throws Exception     If any decoding issue occurs.
      */
-    public static boolean compareBase64Hashes(String base64Hash1, String base64Hash2) {
+    public static boolean compareHashes(byte[] hash1, byte[] hash2) {
         // NOTE THAT:
         // In order to prevent timing attacks, we're comparing each byte of the decoded hashes and 
         // ensuring the operation takes the same time for both equal and unequal hashes.
-        byte[] decodedHash1 = Base64.getDecoder().decode(base64Hash1);
-        byte[] decodedHash2 = Base64.getDecoder().decode(base64Hash2);
 
-        return MessageDigest.isEqual(decodedHash1, decodedHash2);
+        return MessageDigest.isEqual(hash1, hash2);
     }
 
    /** Computes a SHA-256 digest of the given JsonObject and encrypts it with RSA using a private key,
@@ -497,13 +496,20 @@ public class CryptoLibrary {
      * @param  serverPrivate The path of the file where the JsonObject should be written.
      * @throws Exception     If an I/O error occurs or the file cannot be written.
      */
-    public static String digestAndBase64(JsonObject recordObject,Key serverPrivate) throws Exception {
+    public static String digestAndEncrypt(JsonObject recordObject,Key serverPrivate) throws Exception {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         byte[] hash = digest.digest(gson.toJson(recordObject).getBytes("UTF-8"));
         byte[] encryptedHash = rsaEncrypt(hash, serverPrivate);
         String hashBase64 = Base64.getEncoder().encodeToString(encryptedHash);
 
         return hashBase64;
+    }
+
+    public static byte[] createDigest(JsonObject recordObject) throws Exception {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] hash = digest.digest(gson.toJson(recordObject).getBytes("UTF-8"));
+
+        return hash;
     }
 
     // --------------------------------------------------------------------------------------------
@@ -634,7 +640,7 @@ public class CryptoLibrary {
         String freshnessEncoded = Base64.getEncoder().encodeToString(encryptedFreshness);
         metadata.addProperty(REFRESH_TOKEN, freshnessEncoded);
 
-        String hashBase64 = digestAndBase64(encryptedRecord, serverPrivate);
+        String hashBase64 = digestAndEncrypt(encryptedRecord, serverPrivate);
         metadata.addProperty(HASH, hashBase64);
     }
 

@@ -50,7 +50,7 @@ public class MedicalRecordService {
         
         // if we want name to be always public change this enum (FIELDS)
         for (String field : CryptoLibrary.FIELDS) {
-            if (fieldPropertiesJson.get(field).getAsBoolean()) {
+            if (fieldPropertiesJson.get(field) != null && !fieldPropertiesJson.get(field).getAsBoolean()) {
                 fields.add(field);
             }
         }
