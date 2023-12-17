@@ -685,10 +685,14 @@ public class CryptoLibrary {
                   
         for (String field : fields) 
         {   
+            // ensure that only previously encrypted fields are decrypted
+            if(iv.get(field) == null) {
+                continue;
+            }
             byte[] encryptedKey = Base64.getDecoder().decode(keys.get(field).getAsString());
             byte[] decryptedKey = rsaDecrypt(encryptedKey, userPrivate);
             Key key = new SecretKeySpec(decryptedKey, 0, decryptedKey.length, ALGORITHM_AES);
-
+    
             byte[] bytes = recordObject.get(field).getAsString().getBytes();
             byte[] decodedBytes = Base64.getDecoder().decode(bytes);
             byte[] decodedIv = Base64.getDecoder().decode(iv.get(field).getAsString().getBytes());
@@ -742,6 +746,9 @@ public class CryptoLibrary {
                   
         for (String field : fields) 
         {   
+            if(iv.get(field) == null) {
+                continue;
+            }
             byte[] keyBytes = Base64.getDecoder().decode(keys.get(field).getAsString());
             Key key = new SecretKeySpec(keyBytes, 0, keyBytes.length, ALGORITHM_AES);
 
