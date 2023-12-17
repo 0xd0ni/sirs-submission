@@ -57,6 +57,7 @@ public class ClientSession {
 
         options.addOption("h", "help", false, "Show help.");
         options.addOption("a", "address", true, "Address to connect to. ip:port");
+        options.addOption("p", "populate", true, "File to populate the database with.");
         
         runtimeOptions.addOption("r", "register", true, "Register a new patient. Usage: -r <name>");
         runtimeOptions.addOption("s", "show", true, "Get a patient's record. Usage: -g <name>");
@@ -94,6 +95,11 @@ public class ClientSession {
         }
         if (!cmd.hasOption("address")) {
             System.out.println("Error: Missing address");
+            return;
+        }
+        if (cmd.hasOption("populate")) {
+            String populateFile = cmd.getOptionValue("populate");
+            this.clientHttp.populate(populateFile);
             return;
         }
         this.serverAddress = cmd.getOptionValue("address");

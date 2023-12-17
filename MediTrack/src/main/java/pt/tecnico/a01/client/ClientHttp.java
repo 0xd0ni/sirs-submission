@@ -34,6 +34,37 @@ public class ClientHttp {
         }
     }
 
+    public void populate(String filename) {
+        try {
+            saveRecord(CryptoLibrary.readFileToJsonObject(filename));
+        }
+        catch (Exception e) {
+            System.out.println("Error populating database: " + e.getMessage());
+        }
+    }
+
+    public void saveRecord(JsonObject record) {
+        RequestBody formBody = new FormBody.Builder()
+            .add("record", gson.toJson(record)).build();
+        Request request = new Request.Builder()
+            .url("http://" + this.serverAddress + "/")
+            .put(formBody)
+            .build();
+
+        Call call = client.newCall(request);
+        try {
+            Response response = call.execute();
+            if (response.code() != 200) {
+                System.out.println("Error saving record: " + response.body().string());
+            }
+            else {
+                System.out.println("Record saved successfully");
+            }
+        } catch (Exception e) {
+            System.out.println("Error saving record: " + e.getMessage());
+        }
+    }
+
     public JsonObject getRecord(String name) throws Exception {
         Request request = new Request.Builder()
             .url("http://" + this.serverAddress + "/" + name)

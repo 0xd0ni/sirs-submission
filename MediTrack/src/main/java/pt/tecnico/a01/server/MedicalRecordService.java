@@ -26,15 +26,19 @@ public class MedicalRecordService {
     }
 
     // if we get an empty string, we should throw an exception
-    public String getMedicalRecord(String patientName) {
+    public String getMedicalRecord(String patientName) throws Exception{
         // maybe add Status
-        String medicalRecord = medicalRecordRepository.find(patientName).orElse("{}");
+        String medicalRecord = medicalRecordRepository.find(patientName).orElse(null);
+        if (medicalRecord == null) {
+            throw new Exception("Patient not found");
+        }
         return medicalRecord;
     }
-    public String saveMedicalRecord(String medicalRecord) {
-        JsonObject medicalRecordJson = gson.fromJson(medicalRecord, JsonObject.class);
-        medicalRecordJson.addProperty("name", gson.toJson(medicalRecordJson.get("metadata").getAsJsonObject().get("name")));
-        return medicalRecordRepository.save(medicalRecord);
+    public String saveMedicalRecord(String carrierJson) throws Exception {
+        JsonObject medicalRecordJson = gson.fromJson(carrierJson, JsonObject.class).get("record").getAsJsonObject();
+        JsonObject encryptedRecordJson = CryptoLibrary.protect(medicalRecordJson);
+        encryptedRecordJson.addProperty("name", gson.toJson(medicalRecordJson.get("metadata").getAsJsonObject().get("name")));
+        return medicalRecordRepository.save(gson.toJson(encryptedRecordJson));
     }
 
     public String changeProtections(String patientName, String fieldProperties) throws Exception {
@@ -57,6 +61,7 @@ public class MedicalRecordService {
 
         JsonObject newlyProtectedObject = CryptoLibrary.protect(unprotectedObject, fields.toArray(new String[fields.size()]));
         JsonObject metadata = newlyProtectedObject.get("metadata").getAsJsonObject();
+        // wasn't I supposed to not encrypt the metadata only when sending?
         CryptoLibrary.encryptMetadata(
             metadata, 
             userPublic, serverPrivate,
