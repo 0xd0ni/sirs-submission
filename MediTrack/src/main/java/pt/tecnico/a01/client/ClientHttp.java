@@ -7,6 +7,7 @@ import java.security.Key;
 import main.java.pt.tecnico.a01.cryptography.CryptoLibrary;
 import okhttp3.Call;
 import okhttp3.FormBody;
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -29,7 +30,7 @@ public class ClientHttp {
             JsonObject encryptedrecord = getRecord(name);
             return CryptoLibrary.unprotect(encryptedrecord, userPrivate);
         } catch (Exception e) {
-            
+            System.out.println("Error getting record: " + e.getMessage());
             return null;            
         }
     }
@@ -44,13 +45,12 @@ public class ClientHttp {
     }
 
     public void saveRecord(JsonObject record) {
-        RequestBody formBody = new FormBody.Builder()
-            .add("record", gson.toJson(record)).build();
+        RequestBody formBody = FormBody.create(gson.toJson(record), MediaType.parse("application/json"));
         Request request = new Request.Builder()
-            .url("http://" + this.serverAddress + "/")
+            .url("http://" + this.serverAddress + "/" + record.get("patient").getAsJsonObject().get("name").getAsString())
             .put(formBody)
             .build();
-
+        System.out.println("Saving record... url: " + request.url().toString());
         Call call = client.newCall(request);
         try {
             Response response = call.execute();
@@ -59,9 +59,10 @@ public class ClientHttp {
             }
             else {
                 System.out.println("Record saved successfully");
+                System.out.println("Record: " + response.body().string());
             }
         } catch (Exception e) {
-            System.out.println("Error saving record: " + e.getMessage());
+            System.out.println("Error saving record: sobXception" + e.getMessage());
         }
     }
 
@@ -118,7 +119,9 @@ public class ClientHttp {
                     System.out.println();
                     System.out.println(field + ": " + gson.toJson(patient.get(field).getAsJsonArray()));
                 }
-                System.out.println(field + ": " + patient.get(field).getAsString() + ";");
+                else {
+                    System.out.println(field + ": " + patient.get(field).getAsString() + ";");
+                }
             }
         }
     }

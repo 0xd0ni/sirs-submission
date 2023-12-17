@@ -19,6 +19,7 @@ public class ServerApplication {
 			});
 
 			put("/:name", (req, res) -> {
+				System.out.println("_________________________________Saving record..._________________________");
 				try {
 					return medicalRecordService.saveMedicalRecord(req.body());
 				} catch (Exception e) {
@@ -28,7 +29,8 @@ public class ServerApplication {
 			});
 			put("/commit/:name", (req, res) -> {
 				try {
-					return medicalRecordService.changeProtections(req.params(":name"), req.body());
+					medicalRecordService.changeProtections(req.params(":name"), req.body());
+					return "OK";
 				} catch (Exception e) {
 					res.status(404);
 					return e.getMessage();

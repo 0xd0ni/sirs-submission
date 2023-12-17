@@ -32,16 +32,37 @@ public class MedicalRecordService {
         if (medicalRecord == null) {
             throw new Exception("Patient not found");
         }
-        return medicalRecord;
+        JsonObject medicalRecordObject = gson.fromJson(medicalRecord, JsonObject.class);
+        JsonObject metadata = medicalRecordObject.get("metadata").getAsJsonObject();
+        CryptoLibrary.encryptMetadata(
+            metadata, 
+            userPublic, serverPrivate,
+            medicalRecordObject.get("record").getAsJsonObject());
+        medicalRecordObject.add("metadata", metadata);
+        return gson.toJson(medicalRecordObject);
     }
     public String saveMedicalRecord(String carrierJson) throws Exception {
-        JsonObject medicalRecordJson = gson.fromJson(carrierJson, JsonObject.class).get("record").getAsJsonObject();
-        JsonObject encryptedRecordJson = CryptoLibrary.protect(medicalRecordJson);
-        encryptedRecordJson.addProperty("name", gson.toJson(medicalRecordJson.get("metadata").getAsJsonObject().get("name")));
+        JsonObject medicalRecordJson;
+        try {
+            medicalRecordJson = gson.fromJson(carrierJson, JsonObject.class);
+        }
+        catch(Exception e){
+            throw new Exception("Invalid record + " + carrierJson);
+        }
+        JsonObject encryptedRecordJson;
+        try {
+            encryptedRecordJson = CryptoLibrary.protect(medicalRecordJson);
+        }
+        catch(Exception e){
+            throw new Exception("Failed to encrypt record");
+        }
+        String name = medicalRecordJson.get("patient").getAsJsonObject().get("name").getAsString();
+        encryptedRecordJson.addProperty("name", name);
+        // The name has to be exposed
         return medicalRecordRepository.save(gson.toJson(encryptedRecordJson));
     }
 
-    public String changeProtections(String patientName, String fieldProperties) throws Exception {
+    public void changeProtections(String patientName, String fieldProperties) throws Exception {
         JsonObject fieldPropertiesJson = gson.fromJson(fieldProperties, JsonObject.class);
         String medicalRecord = medicalRecordRepository.find(patientName).orElse(null);
         if (medicalRecord == null) {
@@ -60,13 +81,6 @@ public class MedicalRecordService {
         }
 
         JsonObject newlyProtectedObject = CryptoLibrary.protect(unprotectedObject, fields.toArray(new String[fields.size()]));
-        JsonObject metadata = newlyProtectedObject.get("metadata").getAsJsonObject();
-        // wasn't I supposed to not encrypt the metadata only when sending?
-        CryptoLibrary.encryptMetadata(
-            metadata, 
-            userPublic, serverPrivate,
-            newlyProtectedObject.get("record").getAsJsonObject());
-        newlyProtectedObject.add("metadata", metadata);
-        return medicalRecordRepository.save(gson.toJson(newlyProtectedObject));
+        medicalRecordRepository.save(gson.toJson(newlyProtectedObject));
     }
 }

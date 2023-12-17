@@ -44,7 +44,11 @@ public class MedicalRecordRepository{
     }
 
     public Optional<String> find(String patientName) {
-        return Optional.ofNullable(this.database.getCollection("patients").find(new Document("name", patientName)).first().toJson());
+        Document record = this.database.getCollection("patients").find(new Document("name", patientName)).first();
+        if (record == null) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(record.toJson());
     }
 
     public Iterable<String> findAll() {

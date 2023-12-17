@@ -57,7 +57,7 @@ public class ClientSession {
 
         options.addOption("h", "help", false, "Show help.");
         options.addOption("a", "address", true, "Address to connect to. ip:port");
-        options.addOption("p", "populate", true, "File to populate the database with.");
+        options.addOption("p", "populate", true, "File to populate the database with. This option does not provide confidentiality and should only be used by the admin for testing.");
         
         runtimeOptions.addOption("r", "register", true, "Register a new patient. Usage: -r <name>");
         runtimeOptions.addOption("s", "show", true, "Get a patient's record. Usage: -g <name>");
@@ -87,23 +87,23 @@ public class ClientSession {
             formatter.printHelp("MediTrack", options);
             System.out.println();
             System.out.println("For runtime: ");
-            formatter.printHelp("", runtimeOptions);
+            formatter.printHelp("-", runtimeOptions);
             System.out.println();
             System.out.println("For patient mode: ");
-            formatter.printHelp("", patientOptions);
+            formatter.printHelp("-", patientOptions);
             return;
         }
         if (!cmd.hasOption("address")) {
             System.out.println("Error: Missing address");
             return;
         }
+        this.serverAddress = cmd.getOptionValue("address");
+        this.clientHttp = new ClientHttp(serverAddress);
         if (cmd.hasOption("populate")) {
             String populateFile = cmd.getOptionValue("populate");
             this.clientHttp.populate(populateFile);
             return;
         }
-        this.serverAddress = cmd.getOptionValue("address");
-        this.clientHttp = new ClientHttp(serverAddress);
         String mode = RUNTIME; // modes: runtime, patient, doctor, admin
         while (true) {
             String[] command = System.console().readLine().split(" ", 0);
@@ -170,6 +170,10 @@ public class ClientSession {
         } else if (cmd.hasOption("show")) {
             String patientName = cmd.getOptionValue("show");
             JsonObject record = this.clientHttp.getRecordAsPatient(patientName, userPrivate);
+            if (record == null) {
+                return RUNTIME;
+            }
+            System.out.println("Record: " + gson.toJson(record));
             // if successful set name
             this.clientHttp.printRecord(record);
             
@@ -262,7 +266,7 @@ public class ClientSession {
             this.discloseSex = !this.discloseSex;
         } else if (property.equals("dateOfBirth")) {
             this.discloseDateOfBirth = !this.discloseDateOfBirth;
-        } else if (property.equals("bloodtype")) {
+        } else if (property.equals("bloodType")) {
             this.discloseBloodtype = !this.discloseBloodtype;
         } else if (property.equals("knownAllergies")) {
             this.discloseKnownAllergies = !this.discloseKnownAllergies;
