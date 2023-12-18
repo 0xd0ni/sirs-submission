@@ -19,7 +19,7 @@ public class MedicalRecordService {
     private Gson gson;
 
     public MedicalRecordService() throws Exception{
-        this.medicalRecordRepository = new MedicalRecordRepository("mongodb://localhost:27017","meditrack");
+        this.medicalRecordRepository = new MedicalRecordRepository("mongodb://192.168.56.10:27017","meditrack");
         this.userPublic = CryptoLibrary.readPublicKey("../keys/user.pubkey");
         this.serverPrivate = CryptoLibrary.readPrivateKey("../keys/server.privkey");
         this.gson = new Gson();
