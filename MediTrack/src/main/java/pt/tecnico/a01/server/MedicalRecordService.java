@@ -14,6 +14,8 @@ public class MedicalRecordService {
 
     private Key userPublic;
 
+    private Key sosPublic;
+
     private Key serverPrivate;
 
     private Gson gson;
@@ -21,6 +23,7 @@ public class MedicalRecordService {
     public MedicalRecordService() throws Exception{
         this.medicalRecordRepository = new MedicalRecordRepository("mongodb://192.168.56.10:27017","meditrack");
         this.userPublic = CryptoLibrary.readPublicKey("../keys/user.pubkey");
+        this.sosPublic = CryptoLibrary.readPublicKey("../keys/sospub.key");
         this.serverPrivate = CryptoLibrary.readPrivateKey("../keys/server.privkey");
         this.gson = new Gson();
     }
@@ -36,7 +39,7 @@ public class MedicalRecordService {
         JsonObject metadata = medicalRecordObject.get("metadata").getAsJsonObject();
         CryptoLibrary.encryptMetadata(
             metadata, 
-            userPublic, serverPrivate,
+            userPublic, sosPublic, serverPrivate,
             medicalRecordObject.get("record").getAsJsonObject());
         medicalRecordObject.add("metadata", metadata);
         return gson.toJson(medicalRecordObject);
