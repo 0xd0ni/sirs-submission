@@ -657,8 +657,11 @@ public class CryptoLibrary {
                              Key userPrivate, String... fields) throws Exception {
 
         JsonObject decryptedRecord = new JsonObject();
-
-        
+         
+        for (String field : FIELDS) 
+        {
+            decryptedRecord.addProperty(field, new String());        
+        }       
         if(fields.length == 0) {
             // Decrypt all fields using AES
             decryptFields(record, iv, keys, decryptedRecord, userPrivate, FIELDS);
