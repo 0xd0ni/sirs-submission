@@ -33,27 +33,24 @@ The following diagram shows the networks and machines:
 ### Prerequisites
 
 All the virtual machines are based on: Linux 64-bit, Kali 2023.3  
+We create our whole infrastructure using Vagrant.
 
-[Download](https://...link_to_download_installation_media) and [install](https://...link_to_installation_instructions) a virtual machine of Kali Linux 2023.3.  
-Clone the base machine to create the other machines.
-
-*(above, replace witch actual links)*
-
-### Machine configurations
-
-For each machine, there is an initialization script with the machine name, with prefix `init-` and suffix `.sh`, that installs all the necessary packages and makes all required configurations in the a clean machine.
-
-Inside each machine, use Git to obtain a copy of all the scripts and code.
-
-```sh
-$ git clone https://github.com/tecnico-sec/cxx...
+### Instructions to run the project
+```
+git clone https://github.com/tecnico-sec/a01-diogo-allan-stanislaw.git
+cd a01-diogo-allan-stanislaw/scripts
+vagrant up 
+// This may take some minutes
 ```
 
-*(above, replace with link to actual repository)*
+After it completes, we need to run in VM VirtualBox the 3 virtual machines we are going to use, server, db and client.
+The login is made using "vagrant" as username and password.
+
+For each machine, there is an initialization script inside scripts folder with the machine name, with prefix `init-` and suffix `.sh`, that makes all required configurations in the a clean machine.
 
 Next we have custom instructions for each machine.
 
-#### Machine 1
+#### Machine DB
 
 This machine runs ...
 
