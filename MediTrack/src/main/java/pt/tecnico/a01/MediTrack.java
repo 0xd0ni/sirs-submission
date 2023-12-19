@@ -12,6 +12,8 @@ public class MediTrack
     private static String serverPublicKeyPath = "../keys/server.pubkey";
     private static String userPrivateKeyPath = "../keys/user.privkey";
     private static String userPublicKeyPath = "../keys/user.pubkey";
+    private static String sosPublicKeyPath = "../keys/sospub.key";
+    private static String sosPrivateKeyPath = "../keys/sospriv.key";
 
     private static String MESSAGE_HELP = "[MediTrack - help]: Usage info: ";
     private static String MESSAGE_USAGE = " protect (input-file) (output-file) ...\n" +
@@ -51,7 +53,8 @@ public class MediTrack
                     try {
                         Key serverPrivate = CryptoLibrary.readPrivateKey(serverPrivateKeyPath);
                         Key userPublic = CryptoLibrary.readPublicKey(userPublicKeyPath);
-                        CryptoLibrary.protect(inputFile, outputFile, serverPrivate, userPublic,fields);
+                        Key sosPublic = CryptoLibrary.readPublicKey(sosPublicKeyPath);
+                        CryptoLibrary.protect(inputFile, outputFile, serverPrivate, userPublic, sosPublic, fields);
                     } catch (Exception e) {
                         System.out.println("Error protecting file: " + e);
                     }     
@@ -64,12 +67,10 @@ public class MediTrack
                 if(args.length >= 3) {
                     System.out.println("[MediTrack - unprotect]: Unprotecting file " + inputFile + " to " + outputFile);
                     String[] fields = args.length >= 4 ? Arrays.copyOfRange(args, 3, args.length) : new String[0];
-                    for (String el : fields) {
-                            System.out.println("testing" + el);
-                    }
                     try {
                         Key userPrivate = CryptoLibrary.readPrivateKey(userPrivateKeyPath);
-                        CryptoLibrary.unprotect(inputFile, outputFile, userPrivate, fields);
+                        Key sosPrivate = CryptoLibrary.readPrivateKey(sosPrivateKeyPath);
+                        CryptoLibrary.unprotect(inputFile, outputFile, userPrivate, sosPrivate, fields);
                     } catch(Exception e) {
                         System.out.println("Error unprotecting file " + e);
                     }
