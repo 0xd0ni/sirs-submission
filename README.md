@@ -46,7 +46,7 @@ vagrant up
 After it completes, we need to run in VM VirtualBox the 3 virtual machines we are going to use, server, db and client.
 The login is made using "vagrant" as username and password.
 
-For each machine, there is an initialization script inside scripts folder with the machine name, with prefix `init-` and suffix `.sh`, that makes all required configurations in the a clean machine.
+For each machine, there is an initialization script inside scripts/<vm-name>  with the machine name, with prefix `init-` and suffix `.sh`, that makes all required configurations in the a clean machine.
 
 Next we have custom instructions for each machine.
 
@@ -54,7 +54,13 @@ Next we have custom instructions for each machine.
 
 This machine runs ...
 
-*(describe what kind of software runs on this machine, e.g. a database server (PostgreSQL 16.1))*
+After running the script inside scripts/db folder, we can start our database by doing the following.
+
+```
+vagrant@db:~$ cd mongodb/mongodb-linux-x86_64-ubuntu1804-4.2.8/bin
+vagrant@db:~/mongodb/mongodb-linux-x86_64-ubuntu1804-4.2.8/bin/$ sudo ./mongod --config mongod.conf
+```
+The database should start running without any problem (mongodb 4.2.8)
 
 To verify:
 
