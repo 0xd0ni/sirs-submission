@@ -114,16 +114,26 @@ TODO:
 
 (_Describe the new requirements introduced in the security challenge and how they impacted your original design._)
 
+1) The security challenge requires that a user can share specific fields of his record with specific doctors.
+2) It is also stated that the record's safety should have a way to be overridden in case of an emergency.
+3) Finally, each consultationRecord should be signed by the doctor.
 #### 2.3.2. Attacker Model
 
 (_Define who is fully trusted, partially trusted, or untrusted._)
+We trust a doctor who signs a record, but he has limited control over the system: he cannot delete records, only add. Additionally, patients can trust doctors with read access to certain parts of their record.
+We trust the server to store the data. In normal conditions it doesn't have access to the data, but we trust it with storing the SOS keys.
+Todo: What about the patient?
 
 (_Define how powerful the attacker is, with capabilities and limitations, i.e., what can he do and what he cannot do_)
-
+The server could be a vector of attack to obtain the data, through the SOS keys.
+If the doctor's keys were compromised to the attacker he could add fake records and have access to the information that had been shared with that doctor.
+And if the patient's keys were compromised an attacker could give read access to the patient's record to any doctor.
 #### 2.3.3. Solution Design and Implementation
 
 (_Explain how your team redesigned and extended the solution to meet the security challenge, including key distribution and other security measures._)
-
+1) Initially we envisioned a centralized server that could provide access to those fields, but this would violate the patient's privacy and make the data vulnerable to an attack on the server. Therefore, we opted to have the user share the keys with a specific doctor: he encrypts them with the doctor's public key and sends to the server, where the doctor can retrieve them when he needs.
+2) To fulfill this requirement, each protected document includes a set of the symmetric keys that is encrypted with a special SOS key. When an emergency situation occurs, this key, that should be stored securely, provides access to the file.
+3) TO DO
 (_Identify communication entities and the messages they exchange with a UML sequence or collaboration diagram._)
 
 ## 3. Conclusion
@@ -133,7 +143,7 @@ TODO:
 (_Describe which requirements were satisfied, partially satisfied, or not satisfied; with a brief justification for each one._)
 
 (_Identify possible enhancements in the future._)
-
+Ideally use of the SOS keys would require special authentication of the person accessing it, and a record of the accesses would be kept for accountability.
 (_Offer a concluding statement, emphasizing the value of the project experience._)
 
 ## 4. Bibliography
