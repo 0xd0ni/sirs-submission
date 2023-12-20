@@ -70,7 +70,7 @@ public class MediTrack
                     try {
                         Key userPrivate = CryptoLibrary.readPrivateKey(userPrivateKeyPath);
                         Key sosPrivate = CryptoLibrary.readPrivateKey(sosPrivateKeyPath);
-                        CryptoLibrary.unprotect(inputFile, outputFile, userPrivate, sosPrivate, fields);
+                        CryptoLibrary.unprotect(inputFile, outputFile, userPrivate, fields);
                     } catch(Exception e) {
                         System.out.println("Error unprotecting file " + e);
                     }

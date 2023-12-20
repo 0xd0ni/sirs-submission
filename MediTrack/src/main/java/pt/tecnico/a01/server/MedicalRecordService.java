@@ -3,6 +3,7 @@ package main.java.pt.tecnico.a01.server;
 import main.java.pt.tecnico.a01.cryptography.CryptoLibrary;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import java.security.Key;
@@ -52,38 +53,30 @@ public class MedicalRecordService {
         catch(Exception e){
             throw new Exception("Invalid record + " + carrierJson);
         }
-        JsonObject encryptedRecordJson;
-        try {
-            encryptedRecordJson = CryptoLibrary.protect(medicalRecordJson);
-        }
-        catch(Exception e){
-            throw new Exception("Failed to encrypt record");
-        }
-        String name = medicalRecordJson.get("patient").getAsJsonObject().get("name").getAsString();
-        encryptedRecordJson.addProperty("name", name);
         // The name has to be exposed
-        return medicalRecordRepository.save(gson.toJson(encryptedRecordJson));
+        return medicalRecordRepository.save(gson.toJson(medicalRecordJson));
     }
 
-    public void changeProtections(String patientName, String fieldProperties) throws Exception {
-        JsonObject fieldPropertiesJson = gson.fromJson(fieldProperties, JsonObject.class);
-        String medicalRecord = medicalRecordRepository.find(patientName).orElse(null);
-        if (medicalRecord == null) {
-            throw new Exception("Patient not found");
-        }
-        JsonObject medicalRecordObject = gson.fromJson(fieldPropertiesJson, JsonObject.class);
-        JsonObject unprotectedObject = CryptoLibrary.unprotect(medicalRecordObject);
-        
-        ArrayList<String> fields = new ArrayList<String>();
-        
-        // if we want name to be always public change this enum (FIELDS)
-        for (String field : CryptoLibrary.FIELDS) {
-            if (fieldPropertiesJson.get(field) != null && !fieldPropertiesJson.get(field).getAsBoolean()) {
-                fields.add(field);
-            }
-        }
+    public void shareKeys(String doctorName, String patientName, String keys) throws Exception {
+        medicalRecordRepository.addKeys(doctorName, patientName, keys);
+    }
 
-        JsonObject newlyProtectedObject = CryptoLibrary.protect(unprotectedObject, fields.toArray(new String[fields.size()]));
-        medicalRecordRepository.save(gson.toJson(newlyProtectedObject));
+    public void addConsultationRecordAsDoctor(String patientName, String consultationRecord) {
+        // For this to work consultationRecords must be split up
+        medicalRecordRepository.find(patientName).ifPresent(medicalRecord -> {
+            JsonObject medicalRecordJson = gson.fromJson(medicalRecord, JsonObject.class);
+            JsonObject record = medicalRecordJson.get("record").getAsJsonObject();
+            JsonArray consultationRecords;
+            if (record.get("consultationRecords") != null) {
+                consultationRecords = gson.fromJson(record.get("consultationRecords").getAsJsonArray(), JsonArray.class);
+            }
+            else {
+                consultationRecords = new JsonArray();
+            }
+            // redo digest?
+            consultationRecords.add(consultationRecord);
+            record.add("consultations", consultationRecords.getAsJsonObject());
+            medicalRecordRepository.save(gson.toJson(medicalRecordJson));
+        });
     }
 }
