@@ -98,11 +98,13 @@ Let's first take a look at our core data format
 
 TODO:
 1) describe each json objects
+
 Each json object contains a Medical Record of a patient. Each Medical Record contains all the fields described in this project scenario about the Meditrack and metadata.
 
 2) describe how the fields of each of the objects relate to the original
 
 3) describe in detail the security mechanism behind the metadata object;
+
 The metadata object has an initialization vector and keys for each field of the record. These keys are used for protecting/unprotecting the fields we need. We also have an SOS field in metadata in order to access a patient record in an emmergency situation.
 Finally we have refreshToken, so we can ensure freshness, and hashvalue to check the integrity of the data.
 
@@ -134,7 +136,8 @@ We are using 4 ip adresses, so we can assign properly VMs with the interfaces we
 #### 2.2.2. Server Communication Security
 
 (_Discuss how server communications were secured, including the secure channel solutions implemented and any challenges encountered._)
-
+To secure our communications we set a firewall rule on database machine, where we only allow communications for mongodb port(27017) and the ip of the server (192.168.56.11). 
+Ideally we should complement the usage of firewall rules with tls connection. This way, besides controlling the traffic in the network we could achieve confidentiality and integrity in the communication. We could not do that due to lack of time.
 (_Explain what keys exist at the start and how are they distributed?_)
 
 ### 2.3. Security Challenge
