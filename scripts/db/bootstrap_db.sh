@@ -15,5 +15,5 @@ sudo cp -R -n mongodb-linux-x86_64-ubuntu1804-4.2.8/ mongodb
 mkdir -p mongodb/data/db
 rm -r mongodb-linux-x86_64-ubuntu1804-4.2.8
 rm -rf mongodb-linux-x86_64-ubuntu1804-4.2.8.tgz
-cp project/scripts/mongod.conf mongodb/mongodb-linux-x86_64-ubuntu1804-4.2.8/bin/
+cp project/scripts/db/mongod.conf mongodb/mongodb-linux-x86_64-ubuntu1804-4.2.8/bin/
 # para correr o mongodb: sudo ./mongodb/bin/mongod --dbpath ./mongodb/data/db

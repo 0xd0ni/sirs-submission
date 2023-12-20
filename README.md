@@ -50,11 +50,11 @@ For each machine, there is an initialization script inside scripts/<vm-name>  wi
 
 Next we have custom instructions for each machine.
 
-#### Machine DB
+#### DB Machine 
 
 This machine runs ...
 
-After running the script inside scripts/db folder, we can start our database by doing the following.
+After running the script inside scripts/db folder, we can run our database by doing the following.
 
 ```
 vagrant@db:~$ cd mongodb/mongodb-linux-x86_64-ubuntu1804-4.2.8/bin
@@ -62,33 +62,29 @@ vagrant@db:~/mongodb/mongodb-linux-x86_64-ubuntu1804-4.2.8/bin/$ sudo ./mongod -
 ```
 The database should start running without any problem (mongodb 4.2.8)
 
-To verify:
+#### Server Machine 
+This machine runs ...
 
-```sh
-$ setup command
+After running the script inside scripts/server folder, we can run our server by doing the following.
+
+```
+vagrant@server:~$ cd projects/Meditrack
+vagrant@server:~/projects/Meditrack$ mvn clean compile
+vagrant@server:~/projects/Meditrack$ mvn install
+vagrant@server:~/projects/Meditrack$ ./target/appassembler/bin/ServerApplication
 ```
 
-*(replace with actual commands)*
+The server should run and be connected to the database
 
-To test:
+#### Client Machine
+This machine runs ...
 
-```sh
-$ test command
+After running the script inside scripts/client folder, we can run our server by doing the following.
+
 ```
-
-*(replace with actual commands)*
-
-The expected results are ...
-
-*(explain what is supposed to happen if all goes well)*
-
-If you receive the following message ... then ...
-
-*(explain how to fix some known problem)*
-
-#### Machine ...
-
-*(similar content structure as Machine 1)*
+vagrant@client:~$ cd projects/Meditrack 
+vagrant@client:~/projects/Meditrack$ ./target/appassembler/bin/Client
+```
 
 ## Demonstration
 
