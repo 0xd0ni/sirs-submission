@@ -26,6 +26,8 @@ public class ClientSession {
     private ClientHttp clientHttp;
 
     private Key userPrivate;
+
+    private Key sosPublic;
     // If we wish to have different users the key will need to be changed on login
 
 
@@ -72,6 +74,7 @@ public class ClientSession {
         try {
             cmd = parser.parse(options, args);
             this.userPrivate = CryptoLibrary.readPrivateKey("../keys/user.privkey");
+            this.sosPublic = CryptoLibrary.readPublicKey("../keys/sospub.key");
         } catch (Exception e) {
             System.err.println("Error parsing command");
             return;
@@ -163,18 +166,20 @@ public class ClientSession {
             return DOCTOR;
         } else if (cmd.hasOption("register")) {
             String filePath = cmd.getOptionValue("register");
-            // where do we get the record from?
+            try {
+                JsonObject record = CryptoLibrary.readFileToJsonObject(filePath);
+                this.clientHttp.saveRecordAsPatient(record, userPrivate, sosPublic);
+            } catch (Exception e) {
+                System.out.println("Error: " + e.getMessage());
+                return PATIENT;
+            }
             return PATIENT;
         } else if (cmd.hasOption("show")) {
-            String patientName = cmd.getOptionValue("show");
-            JsonObject record = this.clientHttp.getRecordAsPatient(patientName, userPrivate);
+            JsonObject record = this.clientHttp.getRecordAsPatient(this.userName, userPrivate);
             if (record == null) {
-                return RUNTIME;
+                return PATIENT;
             }
-            System.out.println("Record: " + gson.toJson(record));
-            // if successful set name
             this.clientHttp.printRecord(record);
-            
             return PATIENT;
         } else if (cmd.hasOption("quit")) {
             return QUIT;
