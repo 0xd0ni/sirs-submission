@@ -2,7 +2,11 @@ package main.java.pt.tecnico.a01.server;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
-
+import com.mongodb.connection.SslSettings;
+import com.mongodb.MongoClientSettings;
+import java.security.NoSuchAlgorithmException;
+import javax.net.ssl.SSLContext;
+import com.mongodb.ConnectionString;
 import java.util.ArrayList;
 import java.util.stream.StreamSupport;
 import java.util.Optional;
@@ -13,11 +17,17 @@ public class MedicalRecordRepository{
     private MongoClient mongoClient;
 
     private MongoDatabase database;
-
     private String databaseName;
 
-    public MedicalRecordRepository(String url, String databaseName) {
+    public MedicalRecordRepository(String url, String databaseName) throws NoSuchAlgorithmException {
         super();
+        //System.setProperty("javax.net.ssl.trustStore", "/home/vagrant/project/scripts/truststore.ts");
+        //System.setProperty("javax.net.ssl.trustStorePassword", "mypasswd");
+        //MongoClientSettings settings = MongoClientSettings.builder().applyConnectionString(new ConnectionString(url))
+        //.applyToSslSettings(builder -> {
+        //         builder.enabled(true);
+        //     })
+        //.build();'''
         this.mongoClient = MongoClients.create(url);
         this.databaseName = databaseName;
         this.database = this.mongoClient.getDatabase(this.databaseName);
