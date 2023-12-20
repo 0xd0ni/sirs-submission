@@ -55,7 +55,6 @@ public class ClientSession {
 
         options.addOption("h", "help", false, "Show help.");
         options.addOption("a", "address", true, "Address to connect to. ip:port");
-        options.addOption("p", "populate", true, "File to populate the database with. This option does not provide confidentiality and should only be used by the admin for testing.");
         
         runtimeOptions.addOption("u", "patient", true, "Sign in as a patient. Usage: -u <name>");
         runtimeOptions.addOption("d", "doctor", true, "Sign in as a doctor. Usage: -d <name>");
@@ -76,7 +75,6 @@ public class ClientSession {
         CommandLine cmd;
         try {
             cmd = parser.parse(options, args);
-            this.userPrivate = CryptoLibrary.readPrivateKey("../keys/user.privkey");
             this.sosPublic = CryptoLibrary.readPublicKey("../keys/sospub.key");
             this.serverPublic = CryptoLibrary.readPrivateKey("../keys/server.pubkey");
         } catch (Exception e) {
@@ -100,12 +98,7 @@ public class ClientSession {
         }
         this.serverAddress = cmd.getOptionValue("address");
         this.clientHttp = new ClientHttp(serverAddress);
-        if (cmd.hasOption("populate")) {
-            // change this to use cmd.getOptionValues and support many files at once
-            String populateFile = cmd.getOptionValue("populate");
-            this.clientHttp.populate(populateFile);
-            return;
-        }
+
         String mode = RUNTIME; // modes: runtime, patient, doctor, admin
         while (true) {
             String[] command = System.console().readLine().split(" ", 0);
@@ -140,11 +133,23 @@ public class ClientSession {
             return RUNTIME;
         }
         if (cmd.hasOption("patient")) {
-            this.userName = cmd.getOptionValue("register");
+            this.userName = cmd.getOptionValue("patient");
+            try {
+                this.userPrivate = CryptoLibrary.readPrivateKey("../keys/user.privkey");
+            } catch (Exception e) {
+                System.out.println("Error reading user key: " + e.getMessage());
+                return RUNTIME;
+            }
             return PATIENT;
 
         } else if (cmd.hasOption("doctor")) {
             this.userName = cmd.getOptionValue("doctor");
+            try {
+                this.userPrivate = this.getDoctorPrivateKey(this.userName);
+            } catch (Exception e) {
+                System.out.println("Error reading user key: " + e.getMessage());
+                return RUNTIME;
+            }
             return DOCTOR;
         } else if (cmd.hasOption("quit")) {
             return QUIT;
@@ -163,10 +168,22 @@ public class ClientSession {
             return QUIT;
         }
         if (cmd.hasOption("patient")) {
-            this.userName = cmd.getOptionValue("register");
+            this.userName = cmd.getOptionValue("patient");
+            try {
+                this.userPrivate = CryptoLibrary.readPrivateKey("../keys/user.privkey");
+            } catch (Exception e) {
+                System.out.println("Error reading user key: " + e.getMessage());
+                return RUNTIME;
+            }
             return PATIENT;
         } else if (cmd.hasOption("doctor")) {
             this.userName = cmd.getOptionValue("doctor");
+            try {
+                this.userPrivate = this.getDoctorPrivateKey(this.userName);
+            } catch (Exception e) {
+                System.out.println("Error reading user key: " + e.getMessage());
+                return RUNTIME;
+            }
             return DOCTOR;
         } else if (cmd.hasOption("register")) {
             String filePath = cmd.getOptionValue("register");
@@ -202,10 +219,22 @@ public class ClientSession {
             return QUIT;
         }
         if (cmd.hasOption("patient")) {
-            this.userName = cmd.getOptionValue("register");
+        this.userName = cmd.getOptionValue("patient");
+            try {
+                this.userPrivate = CryptoLibrary.readPrivateKey("../keys/user.privkey");
+            } catch (Exception e) {
+                System.out.println("Error reading user key: " + e.getMessage());
+                return RUNTIME;
+            }
             return PATIENT;
         } else if (cmd.hasOption("doctor")) {
             this.userName = cmd.getOptionValue("doctor");
+            try {
+                this.userPrivate = this.getDoctorPrivateKey(this.userName);
+            } catch (Exception e) {
+                System.out.println("Error reading user key: " + e.getMessage());
+                return RUNTIME;
+            }
             return DOCTOR;
         } else if (cmd.hasOption("show")) {
             String patientName = cmd.getOptionValue("show");
@@ -263,6 +292,15 @@ public class ClientSession {
         }
         else {
             return false;
+        }
+    }
+
+    public Key getDoctorPrivateKey(String name) throws Exception {
+        if (name.equals("Smith") || name.equals("Johnson") || name.equals("Martins")) {
+            return CryptoLibrary.readPrivateKey("../keys/dr" + name + "priv.key");
+        }
+        else {
+            throw new Exception("Doctor does not exist. ");
         }
     }
 

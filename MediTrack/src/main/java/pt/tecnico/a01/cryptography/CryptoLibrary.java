@@ -141,6 +141,23 @@ public class CryptoLibrary {
         
     }
 
+    public static JsonObject protect(JsonObject rootJson, Key userPublic, Key sosPublic, String... fields) throws Exception {
+        System.out.println(MESSAGE_JSON_OBJECT + rootJson);
+        
+        JsonObject protectedRecord = new JsonObject();
+        JsonObject metadata = new JsonObject();
+
+        // encrypts the core data format
+        JsonObject record = encryptRecord(rootJson.get(PATIENT).getAsJsonObject(), metadata, fields);
+        // computes and encrypts the metadata linked to the patient's record - (core data format)
+        encryptMetadataWithoutDigest(metadata, userPublic, sosPublic);
+
+        protectedRecord.add(RECORD,record);
+        protectedRecord.add(METADATA,metadata);
+        
+        return protectedRecord;
+    }
+
     /**
      * Unprotects MediTrack records (sensitive data) by decrypting it using a combination of symmetric 
      * and asymmetric decryption techniques.
@@ -694,22 +711,8 @@ public class CryptoLibrary {
     public static void encryptMetadata(JsonObject metadata, Key userPublic, Key sosPublic, Key serverPrivate, 
                        JsonObject encryptedRecord) throws Exception {
         
-        // Encrypt each patient's record field's AES symmetric key using the patient's public key.
-        for (String field : FIELDS) 
-        {
-            if(metadata.get(KEYS).getAsJsonObject().get(field) == null) {
-                continue;
-            }
-            byte[] decodedKeyBytes = Base64.getDecoder().decode(
-                                     metadata.get(KEYS).getAsJsonObject().get(field).getAsString());
-            byte[] encryptedBytesSos = rsaEncrypt(decodedKeyBytes, sosPublic);
-            byte[] encryptedBytes = rsaEncrypt(decodedKeyBytes, userPublic);
-            String encryptedBase64 = Base64.getEncoder().encodeToString(encryptedBytes);
-            String encryptedBase64Sos = Base64.getEncoder().encodeToString(encryptedBytesSos);
-            metadata.get(KEYS).getAsJsonObject().addProperty(field, encryptedBase64);
-            metadata.get(SOS).getAsJsonObject().addProperty(field, encryptedBase64Sos);
-      
-        }
+        encryptMetadataWithoutDigest(metadata, userPublic, sosPublic);
+
         byte[] freshnessBytes = Instant.now().toString().getBytes();
         byte[] encryptedFreshness = rsaEncrypt(freshnessBytes, userPublic);
         String freshnessEncoded = Base64.getEncoder().encodeToString(encryptedFreshness);
@@ -944,4 +947,67 @@ public class CryptoLibrary {
         return result;
     }
     
+    /**
+     * 
+     * @param rootJson
+     * @param serverPrivate
+     * @return
+     * @throws Exception
+     */
+    public static JsonObject addDigest(JsonObject rootJson, Key serverPrivate) throws Exception {
+        JsonObject encryptedRecord = rootJson.get(RECORD).getAsJsonObject();
+        JsonObject metadata = rootJson.get(METADATA).getAsJsonObject();
+
+        String hashBase64 = digestAndEncrypt(encryptedRecord, serverPrivate);
+        metadata.addProperty(HASH, hashBase64);
+
+        encryptedRecord.add(METADATA,metadata);
+        
+        return encryptedRecord;
+    }
+
+    /**
+     * 
+     * @param rootJson
+     * @param userPublic
+     * @return
+     * @throws Exception
+     */
+    public static JsonObject addFreshness(JsonObject rootJson, Key userPublic) throws Exception {
+        JsonObject encryptedRecord = rootJson.get(RECORD).getAsJsonObject();
+        JsonObject metadata = rootJson.get(METADATA).getAsJsonObject();
+
+        byte[] freshnessBytes = Instant.now().toString().getBytes();
+        byte[] encryptedFreshness = rsaEncrypt(freshnessBytes, userPublic);
+        String freshnessEncoded = Base64.getEncoder().encodeToString(encryptedFreshness);
+        metadata.addProperty(REFRESH_TOKEN, freshnessEncoded);
+
+        encryptedRecord.add(METADATA,metadata);
+        return encryptedRecord;
+    }
+
+    /**
+     * 
+     * @param metadata
+     * @param userPublic
+     * @param sosPublic
+     * @throws Exception
+     */
+    public static void encryptMetadataWithoutDigest(JsonObject metadata, Key userPublic, Key sosPublic) throws Exception {
+        for (String field : FIELDS) 
+        {
+            if(metadata.get(KEYS).getAsJsonObject().get(field) == null) {
+                continue;
+            }
+            byte[] decodedKeyBytes = Base64.getDecoder().decode(
+                                     metadata.get(KEYS).getAsJsonObject().get(field).getAsString());
+            byte[] encryptedBytesSos = rsaEncrypt(decodedKeyBytes, sosPublic);
+            byte[] encryptedBytes = rsaEncrypt(decodedKeyBytes, userPublic);
+            String encryptedBase64 = Base64.getEncoder().encodeToString(encryptedBytes);
+            String encryptedBase64Sos = Base64.getEncoder().encodeToString(encryptedBytesSos);
+            metadata.get(KEYS).getAsJsonObject().addProperty(field, encryptedBase64);
+            metadata.get(SOS).getAsJsonObject().addProperty(field, encryptedBase64Sos);
+      
+        }
+    }
 }
