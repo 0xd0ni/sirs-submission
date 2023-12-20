@@ -54,31 +54,58 @@ Let's first take a look at our core data format
 
 #### Example - secure document format
 
-
-```json
+``` json
 {
   "record": {
     "name": "",
     "sex": "",
-    "consultationRecords": "",
     "dateOfBirth": "",
     "bloodType": "",
-    "knownAllergies": ""
+    "knownAllergies": "",
+    "consultationRecords": ""
   },
   "metadata": {
-    "key": "",
+    "iv": {
+      "name": "",
+      "sex": "",
+      "dateOfBirth": "",
+      "bloodType": "",
+      "knownAllergies": "",
+      "consultationRecords": ""
+    },
+    "keys": {
+      "name": "",
+      "sex": "",
+      "dateOfBirth": "",
+      "bloodType": "",
+      "knownAllergies": "",
+      "consultationRecords": ""
+    },
+    "sos": {
+      "name": "",
+      "sex": "",
+      "dateOfBirth": "",
+      "bloodType": "",
+      "knownAllergies": "",
+      "consultationRecords": ""
+    },
     "refreshToken": "",
     "hash": ""
   }
 }
-
-
 ```
+
 
 TODO:
 1) describe each json objects
+Each json object contains a Medical Record of a patient. Each Medical Record contains all the fields described in this project scenario about the Meditrack and metadata.
+
 2) describe how the fields of each of the objects relate to the original
+
 3) describe in detail the security mechanism behind the metadata object;
+The metadata object has an initialization vector and keys for each field of the record. These keys are used for protecting/unprotecting the fields we need. We also have an SOS field in metadata in order to access a patient record in an emmergency situation.
+Finally we have refreshToken, so we can ensure freshness, and hashvalue to check the integrity of the data.
+
 4) talk extensively about authenticity and confidentiality
 45 exemplify operations and result
 
@@ -99,6 +126,8 @@ TODO:
 #### 2.2.1. Network and Machine Setup
 
 (_Provide a brief description of the built infrastructure._)
+In our project we have 2 switches(sw-1 and sw-2), so we can connect the database machine to server machine and this one with the client machine. 
+We are using 4 ip adresses, so we can assign properly VMs with the interfaces we need to use.
 
 (_Justify the choice of technologies for each server._)
 
