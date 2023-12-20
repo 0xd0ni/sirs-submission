@@ -26,6 +26,8 @@ public class ClientSession {
     private ClientHttp clientHttp;
 
     private Key userPrivate;
+
+    private Key sosPublic;
     // If we wish to have different users the key will need to be changed on login
 
 
@@ -35,16 +37,9 @@ public class ClientSession {
     private final String ADMIN = "admin";
     private final String QUIT = "quit";
 
-    private boolean discloseName = false;
-    private boolean discloseSex = false;
-    private boolean discloseDateOfBirth = false;
-    private boolean discloseBloodtype = false;
-    private boolean discloseKnownAllergies = false;
-    private boolean discloseConsultationRecords = false;
-
     private JsonObject record;
 
-    private String patientName;
+    private String userName;
 
     CommandLineParser parser = new DefaultParser();
 
@@ -59,18 +54,19 @@ public class ClientSession {
         options.addOption("a", "address", true, "Address to connect to. ip:port");
         options.addOption("p", "populate", true, "File to populate the database with. This option does not provide confidentiality and should only be used by the admin for testing.");
         
-        runtimeOptions.addOption("r", "register", true, "Register a new patient. Usage: -r <name>");
-        runtimeOptions.addOption("s", "show", true, "Get a patient's record. Usage: -g <name>");
+        runtimeOptions.addOption("u", "patient", true, "Sign in as a patient. Usage: -u <name>");
+        runtimeOptions.addOption("d", "doctor", true, "Sign in as a doctor. Usage: -d <name>");
         runtimeOptions.addOption("q", "quit", false, "Quit the application. Usage: -q");
         
-        patientOptions.addOption("r", "register", true, "Register a new patient. Usage: -r <name>");
-        patientOptions.addOption("s", "show", true, "Get a patient's record. Usage: -g <name>");
-        patientOptions.addOption("pf", "protectField", true, "Protect a field in the patient's record. Usage: -pf <field>");
-        patientOptions.addOption("df", "discloseField", true, "Disclose a field in the patient's record. Usage: -df <field>");
-        patientOptions.addOption("c", "commit", false, "Commit changes to the patient's record's protection. Usage: -c");
-        patientOptions.addOption("s", "state", false, "Show the current state of the patient's record. Usage: -s");
+        patientOptions.addOption("r", "register", true, "Register a new patient and add record. Usage: -r <path to file>");
+        patientOptions.addOption("s", "show", false, "Get a patient's record. Usage: -s");
+        patientOptions.addOption("a", "share", true, "Share a patient's record with a doctor. Usage: -a <list of fields, space separated>");
         patientOptions.addOption("q", "quit", false, "Quit the application. Usage: -q");
 
+        doctorOptions.addOption("s", "show", true, "Get a patient's record. Usage: -g <name>");
+        doctorOptions.addOption("e", "emergency", true, "SOS. Get a patient's record in case of emergency. Usage: -e <name>");
+        doctorOptions.addOption("a", "add", true, "Add a consultation record to a patient's record. Usage: -a <name> <path to file>");
+        doctorOptions.addOption("q", "quit", false, "Quit the application. Usage: -q");
     }
 
     public void start(String[] args){
@@ -78,6 +74,7 @@ public class ClientSession {
         try {
             cmd = parser.parse(options, args);
             this.userPrivate = CryptoLibrary.readPrivateKey("../keys/user.privkey");
+            this.sosPublic = CryptoLibrary.readPublicKey("../keys/sospub.key");
         } catch (Exception e) {
             System.err.println("Error parsing command");
             return;
@@ -100,6 +97,7 @@ public class ClientSession {
         this.serverAddress = cmd.getOptionValue("address");
         this.clientHttp = new ClientHttp(serverAddress);
         if (cmd.hasOption("populate")) {
+            // change this to use cmd.getOptionValues and support many files at once
             String populateFile = cmd.getOptionValue("populate");
             this.clientHttp.populate(populateFile);
             return;
@@ -137,16 +135,13 @@ public class ClientSession {
             System.err.println("Error parsing command");
             return RUNTIME;
         }
-        if (cmd.hasOption("register")) {
-            String patientName = cmd.getOptionValue("register");
-            // where do we get the record from?
+        if (cmd.hasOption("patient")) {
+            this.userName = cmd.getOptionValue("register");
             return PATIENT;
 
-        } else if (cmd.hasOption("show")) {
-            String patientName = cmd.getOptionValue("show");
-            JsonObject record = this.clientHttp.getRecordAsPatient(patientName, userPrivate);
-            // if successful set name
-            return PATIENT;
+        } else if (cmd.hasOption("doctor")) {
+            this.userName = cmd.getOptionValue("doctor");
+            return DOCTOR;
         } else if (cmd.hasOption("quit")) {
             return QUIT;
         } else {
@@ -163,31 +158,28 @@ public class ClientSession {
             System.err.println("Error parsing command");
             return QUIT;
         }
-        if (cmd.hasOption("register")) {
-            String patientName = cmd.getOptionValue("register");
-            // where do we get the record from?
+        if (cmd.hasOption("patient")) {
+            this.userName = cmd.getOptionValue("register");
+            return PATIENT;
+        } else if (cmd.hasOption("doctor")) {
+            this.userName = cmd.getOptionValue("doctor");
+            return DOCTOR;
+        } else if (cmd.hasOption("register")) {
+            String filePath = cmd.getOptionValue("register");
+            try {
+                JsonObject record = CryptoLibrary.readFileToJsonObject(filePath);
+                this.clientHttp.saveRecordAsPatient(record, userPrivate, sosPublic);
+            } catch (Exception e) {
+                System.out.println("Error: " + e.getMessage());
+                return PATIENT;
+            }
             return PATIENT;
         } else if (cmd.hasOption("show")) {
-            String patientName = cmd.getOptionValue("show");
-            JsonObject record = this.clientHttp.getRecordAsPatient(patientName, userPrivate);
+            JsonObject record = this.clientHttp.getRecordAsPatient(this.userName, userPrivate);
             if (record == null) {
-                return RUNTIME;
+                return PATIENT;
             }
-            System.out.println("Record: " + gson.toJson(record));
-            // if successful set name
             this.clientHttp.printRecord(record);
-            
-            return PATIENT;
-        } else if (cmd.hasOption("protectField")) {
-            String field = cmd.getOptionValue("protectField");
-            this.setPropertyToFalse(field);
-            return PATIENT;
-        } else if (cmd.hasOption("discloseField")) {
-            String field = cmd.getOptionValue("discloseField");
-            this.setPropertyToTrue(field);
-            return PATIENT;
-        } else if (cmd.hasOption("commit")) {
-            this.clientHttp.sendCommitRequest(patientName, discloseName, discloseSex, discloseDateOfBirth, discloseBloodtype, discloseKnownAllergies, discloseConsultationRecords);
             return PATIENT;
         } else if (cmd.hasOption("quit")) {
             return QUIT;
@@ -205,17 +197,60 @@ public class ClientSession {
             System.err.println("Error parsing command");
             return QUIT;
         }
-        return "";
+        if (cmd.hasOption("patient")) {
+            this.userName = cmd.getOptionValue("register");
+            return PATIENT;
+        } else if (cmd.hasOption("doctor")) {
+            this.userName = cmd.getOptionValue("doctor");
+            return DOCTOR;
+        } else if (cmd.hasOption("show")) {
+            String patientName = cmd.getOptionValue("show");
+            try {
+                Key doctorPrivate = CryptoLibrary.readPrivateKey("../keys/doctor.privkey");
+                this.clientHttp.getRecordAsDoctor(patientName, userName, doctorPrivate);
+                if (record == null) {
+                    return DOCTOR;
+                }
+            } catch (Exception e) {
+                System.out.println("Error: " + e.getMessage());
+                return DOCTOR;
+            }
+        } else if (cmd.hasOption("emergency")) {
+            String patientName = cmd.getOptionValue("emergency");
+            try {
+                Key doctorPrivate = CryptoLibrary.readPrivateKey("../keys/doctor.privkey");
+                this.clientHttp.getRecordInSos(patientName, userName, doctorPrivate);
+                if (record == null) {
+                    return DOCTOR;
+                }
+            } catch (Exception e) {
+                System.out.println("Error: " + e.getMessage());
+                return DOCTOR;
+            }
+        } else if (cmd.hasOption("add")) {
+            String[] addArgs = cmd.getOptionValues("add");
+            if (addArgs.length != 2) {
+                System.out.println("Error: Invalid number of arguments. Expected <patientName> <filePath>");
+                return DOCTOR;
+            }
+            String patientName = addArgs[0];
+            String filePath = addArgs[1];
+            try {
+                Key doctorPrivate = CryptoLibrary.readPrivateKey("../keys/doctor.privkey");
+                this.clientHttp.addConsultationRecordAsDoctor(CryptoLibrary.readFileToJsonObject(filePath), patientName, doctorPrivate);
+            } catch (Exception e) {
+                System.out.println("Error: " + e.getMessage());
+                return DOCTOR;
+            }
+        } else if (cmd.hasOption("quit")) {
+            return QUIT;
+        } else {
+            System.out.println("Error: Invalid command");
+            return DOCTOR;
+        }
 
-    }
+        return DOCTOR;
 
-    public void resetDiscloseStatus() {
-        this.discloseName = false;
-        this.discloseSex = false;
-        this.discloseDateOfBirth = false;
-        this.discloseBloodtype = false;
-        this.discloseKnownAllergies = false;
-        this.discloseConsultationRecords = false;
     }
 
     public boolean doesPropertyExist(String property) {
@@ -226,54 +261,6 @@ public class ClientSession {
             return false;
         }
     }
-
-    public void setPropertyToFalse(String property) {
-        if (property.equals("name")) {
-            this.discloseName = false;
-        } else if (property.equals("sex")) {
-            this.discloseSex = false;
-        } else if (property.equals("dateOfBirth")) {
-            this.discloseDateOfBirth = false;
-        } else if (property.equals("bloodType")) {
-            this.discloseBloodtype = false;
-        } else if (property.equals("knownAllergies")) {
-            this.discloseKnownAllergies = false;
-        } else if (property.equals("consultationRecords")) {
-            this.discloseConsultationRecords = false;
-        }
-    }
-
-    public void setPropertyToTrue(String property) {
-        if (property.equals("name")) {
-            this.discloseName = true;
-        } else if (property.equals("sex")) {
-            this.discloseSex = true;
-        } else if (property.equals("dateOfBirth")) {
-            this.discloseDateOfBirth = true;
-        } else if (property.equals("bloodType")) {
-            this.discloseBloodtype = true;
-        } else if (property.equals("knownAllergies")) {
-            this.discloseKnownAllergies = true;
-        } else if (property.equals("consultationRecords")) {
-            this.discloseConsultationRecords = true;
-        }
-    }
-
-    public void toggleProperty(String property) {
-        if (property.equals("name")) {
-            this.discloseName = !this.discloseName;
-        } else if (property.equals("sex")) {
-            this.discloseSex = !this.discloseSex;
-        } else if (property.equals("dateOfBirth")) {
-            this.discloseDateOfBirth = !this.discloseDateOfBirth;
-        } else if (property.equals("bloodType")) {
-            this.discloseBloodtype = !this.discloseBloodtype;
-        } else if (property.equals("knownAllergies")) {
-            this.discloseKnownAllergies = !this.discloseKnownAllergies;
-        } else if (property.equals("consultationRecords")) {
-            this.discloseConsultationRecords = !this.discloseConsultationRecords;
-        }
-    } 
 
     
 }

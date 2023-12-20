@@ -27,9 +27,9 @@ public class ServerApplication {
 					return e.getMessage();
 				}
 			});
-			put("/commit/:name", (req, res) -> {
+			post("keys/:doctorName/:patientName", (req, res) -> {
 				try {
-					medicalRecordService.changeProtections(req.params(":name"), req.body());
+					medicalRecordService.shareKeys(req.params(":doctorName"), req.params(":patientName"), req.body());
 					return "OK";
 				} catch (Exception e) {
 					res.status(404);
