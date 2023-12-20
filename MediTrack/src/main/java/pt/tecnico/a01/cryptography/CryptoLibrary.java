@@ -11,6 +11,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.security.SecureRandom;
+import java.security.Signature;
 
 import java.time.Instant;
 import java.lang.reflect.Type;
@@ -40,7 +41,9 @@ public class CryptoLibrary {
                                            "consultationRecords"};
     public static final String[] AES_FIELDS_ORDERING = {"name", "sex"};
     public static final String[] AES_FIELD_ORDERING = {"consultationRecords"};
-    
+    public static final String[] CONSULTATION_RECORDS_FIELDS = {"date", "medicalSpeciality", "doctorName",
+                                                                "practice","treatmentSummary"};
+
     // we can share an instance and let methods reuse it
     public static Gson gson = new Gson();
 
@@ -64,7 +67,10 @@ public class CryptoLibrary {
     private static final String ALTERED = "altered";
     private static final String FRESH = "fresh";
     private static final String STALE = "stale";
-
+    private static final String MESSAGE_PREFIX_VERIFY_SIGN = "[MediTrack (verify-sign)]: ";
+    private static final String PHYSICIAN_NAME = "doctorName";
+    private static final String PHYSICIAN_SIGNED = "The physician cannot deny, he signed the consultation record";
+    private static final String PHYSICIAN_DID_NOT_SIGN = "The physican can deny signing the consultation record";
     private static final String INITIALIZATION_VECTOR = "iv";
     private static final String KEYS = "keys";
     private static final String SOS = "sos";
@@ -74,6 +80,8 @@ public class CryptoLibrary {
     private static final String CIPHER_ALGO_AES = "AES/CBC/PKCS5Padding";
     private static final String ALGORITHM_RSA = "RSA";
     private static final String CIPHER_ALGO_RSA = "RSA/ECB/PKCS1Padding";
+    private static final String DIGITAL_SIGNATURE_INSTANCE = "SHA256withRSA";
+    private static final String DIGITAL_SIGNATURE = "digitalSignature";
     
     // --------------------------------------------------------------------------------------------
     //  Main operations
@@ -889,4 +897,73 @@ public class CryptoLibrary {
         return patient;
     }
 
+    public static void signConsultationRecord(String inputFile, String outputFile, Key physicianPrivateKey) 
+                        throws Exception {
+
+        JsonObject rootJson = readFileToJsonObject(inputFile);
+
+        System.out.println(MESSAGE_JSON_OBJECT + rootJson);
+        
+        JsonObject signedConsultationRecord = new JsonObject();
+        
+        // digital sign the consultation record with the physician's private key
+        JsonObject record = signRecord(rootJson, signedConsultationRecord, physicianPrivateKey);
+        
+        writeJsonObjectToFile(signedConsultationRecord, outputFile);
+        
+    }
+
+    public static JsonObject signRecord(JsonObject consultationRecord, JsonObject signedConsultationRecord, 
+                             Key physicianPrivateKey) throws Exception  {
+
+        byte[] consultationRecordBytes = gson.toJson(consultationRecord).getBytes("UTF-8");
+        PrivateKey privateKey = (PrivateKey) physicianPrivateKey;
+        Signature signature = Signature.getInstance(DIGITAL_SIGNATURE_INSTANCE);
+        signature.initSign(privateKey);
+        signature.update(consultationRecordBytes);
+        byte[] signedConsultationRecordBytes = signature.sign();
+        String consultationRecordSignature = Base64.getEncoder().encodeToString(signedConsultationRecordBytes);
+
+        for(String field: CONSULTATION_RECORDS_FIELDS) {
+            signedConsultationRecord.addProperty(field,consultationRecord.get(field).getAsString());
+        }
+
+        signedConsultationRecord.addProperty(DIGITAL_SIGNATURE,consultationRecordSignature);
+
+        return signedConsultationRecord;
+    }
+
+
+    public static void verifyConsultationRecord(String inputFile, Key physicianPublicKey) throws Exception {
+        
+        JsonObject rootJson = readFileToJsonObject(inputFile);
+        System.out.println(MESSAGE_JSON_OBJECT + rootJson);
+        
+        JsonObject consultationRecord = new JsonObject();
+
+        for(String field: CONSULTATION_RECORDS_FIELDS) {
+            consultationRecord.addProperty(field, rootJson.get(field).getAsString());
+        }
+
+        System.out.println("JSON object: " + consultationRecord);
+
+        byte[] consultationRecordBytes = gson.toJson(consultationRecord).getBytes("UTF-8");
+        byte[] decodedSignatureBytes =  Base64.getDecoder().decode(rootJson.get(
+                                        DIGITAL_SIGNATURE).getAsString().getBytes());
+        
+        PublicKey publicKey = (PublicKey) physicianPublicKey;
+        Signature signature = Signature.getInstance(DIGITAL_SIGNATURE_INSTANCE);
+        signature.initVerify(publicKey);
+        signature.update(consultationRecordBytes);
+        boolean result = signature.verify(decodedSignatureBytes);
+        String doctor = consultationRecord.get(PHYSICIAN_NAME).getAsString();
+
+        String verifyMessage = String.format("%sverify-sign= `%s` - `%s`",
+            MESSAGE_PREFIX_VERIFY_SIGN, result ? PHYSICIAN_SIGNED : PHYSICIAN_DID_NOT_SIGN, 
+            result ? doctor : doctor);
+
+        System.out.println(verifyMessage); 
+
+    }
+    
 }
