@@ -23,12 +23,9 @@ public class ClientHttp {
 
     private String serverAddress;
 
-    private Key serverPrivate;
-
     public ClientHttp(String serverAddress) {
         this.serverAddress = serverAddress;
         try {
-            this.serverPrivate = CryptoLibrary.readPrivateKey("../keys/server.privkey");
         } catch (Exception e) {
             System.out.println("Error reading server private key: " + e.getMessage());
             System.exit(1);
@@ -58,9 +55,9 @@ public class ClientHttp {
     public void saveRecordAsPatient(JsonObject record, Key patientPublic, Key sosPublic) {
         try {
             // REMOVE SERVER PRIVATE KEY
-            JsonObject encryptedRecord = CryptoLibrary.protect(record, this.serverPrivate, patientPublic, sosPublic);
-            encryptedRecord.addProperty("name", record.get("patient").getAsJsonObject().get("name").getAsString());
-            saveRecord(encryptedRecord);
+            //JsonObject encryptedRecord = CryptoLibrary.protect(record, serverPrivate, patientPublic, sosPublic);
+            //encryptedRecord.addProperty("name", record.get("patient").getAsJsonObject().get("name").getAsString());
+            //saveRecord(encryptedRecord);
         }
         catch (Exception e) {
             System.out.println("Error saving record as Patient: " + e.getMessage());
@@ -89,9 +86,10 @@ public class ClientHttp {
         }
     }
 
-    public JsonObject getRecordAsPatient(String name, Key userPrivate) {
+    public JsonObject getRecordAsPatient(String name, Key userPrivate, Key serverPublic) {
         try {
             JsonObject encryptedrecord = getRecord(name);
+            CryptoLibrary.check(encryptedrecord, userPrivate, serverPublic);
             return CryptoLibrary.unprotect(encryptedrecord, userPrivate);
         } catch (Exception e) {
             System.out.println("Error getting record as Patient: " + e.getMessage());
@@ -170,6 +168,7 @@ public class ClientHttp {
         JsonObject encryptedKeys = new JsonObject();
         try {
             JsonObject record = getRecord(patientName);
+            // perhaps add a check of the record here
             JsonObject keys = CryptoLibrary.unprotectKeys(record.get("metadata").getAsJsonObject().get("keys").getAsJsonObject(), userPrivate);
             encryptedKeys = CryptoLibrary.protectKeys(keys, doctorPublic, fields.toArray(new String[fields.size()]));
         } catch (Exception e) {

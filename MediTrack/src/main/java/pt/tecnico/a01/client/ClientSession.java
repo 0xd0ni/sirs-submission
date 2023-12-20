@@ -28,6 +28,9 @@ public class ClientSession {
     private Key userPrivate;
 
     private Key sosPublic;
+
+    private Key serverPublic;
+
     // If we wish to have different users the key will need to be changed on login
 
 
@@ -75,8 +78,9 @@ public class ClientSession {
             cmd = parser.parse(options, args);
             this.userPrivate = CryptoLibrary.readPrivateKey("../keys/user.privkey");
             this.sosPublic = CryptoLibrary.readPublicKey("../keys/sospub.key");
+            this.serverPublic = CryptoLibrary.readPrivateKey("../keys/server.pubkey");
         } catch (Exception e) {
-            System.err.println("Error parsing command");
+            System.err.println("Error parsing command and reading keys");
             return;
         }
         if (cmd.hasOption("help")) {
@@ -175,7 +179,7 @@ public class ClientSession {
             }
             return PATIENT;
         } else if (cmd.hasOption("show")) {
-            JsonObject record = this.clientHttp.getRecordAsPatient(this.userName, userPrivate);
+            JsonObject record = this.clientHttp.getRecordAsPatient(this.userName, userPrivate, serverPublic);
             if (record == null) {
                 return PATIENT;
             }
