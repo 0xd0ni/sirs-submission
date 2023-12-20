@@ -19,6 +19,8 @@ public class MediTrack
     private static String MESSAGE_USAGE = " protect (input-file) (output-file) ...\n" +
                                             "unprotect (input-file) (output-file) ...\n" +
                                             "check (input-file) \n" +
+                                            "sign (input-file) (output-file) (physician-private-key)\n" +
+                                            "verify-sign (input-file) (physician-public-key)\n"+
                                             "note that: `...` denotes 0 or more arguments are expected.\n" +
                                             "these arguments can range from:\n" +
                                             "name\n" +
@@ -40,7 +42,7 @@ public class MediTrack
     {
         String inputFile = args[1];
         String outputFile = args.length >= 3 ? args[2] : null;
-
+     
         switch(args[0]) {
 
             case "protect":
@@ -78,7 +80,40 @@ public class MediTrack
                     printUsage();
                 }
                 break;
-                
+            
+            case "sign":
+                if(args.length >= 3) {
+                    System.out.println("[MediTrack - sign]: Signing a consultation record " + 
+                                      inputFile + " to " + outputFile);
+
+                    String physicianPrivateKeyPath = args[3];
+                    try {
+                        Key physicianPrivate = CryptoLibrary.readPrivateKey(physicianPrivateKeyPath);
+                        CryptoLibrary.signConsultationRecord(inputFile, outputFile, physicianPrivate);
+                    } catch(Exception e) {
+                        System.out.println("Error signing a consultation record " + e);
+                    }
+                } else {
+                    printUsage();
+                }
+                break;
+            
+            case "verify-sign":
+                if(args.length == 3) {
+                    System.out.println("[MediTrack - verify-sign]: Verifying a consultationRecord " 
+                                        + inputFile + " to " + outputFile);
+                    String physicianPublicKeyPath = args[2];
+                    try {
+                        Key physicianPublic = CryptoLibrary.readPublicKey(physicianPublicKeyPath);
+                        CryptoLibrary.verifyConsultationRecord(inputFile, physicianPublic);
+                    } catch(Exception e) {
+                        System.out.println("Error veryfying a consultation record " + e);
+                    }
+                } else {
+                    printUsage();
+                }
+                break;
+     
             case "check":
                 if(args.length == 2) {
                     System.out.println("[MediTrack - check]: Verifying the integrity and status of the document...");
@@ -92,8 +127,7 @@ public class MediTrack
                 } else  {
                     printUsage();
                 }
-                break;
-            
+                break;      
             case "help":
                 printUsage();
                 break;
