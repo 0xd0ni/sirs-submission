@@ -18,8 +18,17 @@ As a three-tier system:
     - share a patient's record with a doctor.
     - add a consultation record to the patient's record.
     - access patient's record under emergency situations, SOS.
-- A **`server`** ...
-- A **`database`** to store persistent information on the patient's record 
+- A **`server`**:
+  
+- A **`database`**:
+  - to store persistent information on the patient's record and shared keys between patients and physicians.
+ 
+
+
+
+
+
+. 
 
 <img src='img/structural-diagram.webp' height='500'> 
 
