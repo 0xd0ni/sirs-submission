@@ -15,8 +15,8 @@ As a three-tier system:
     - sign in as a client / a physician.
     - register a new patient and add a patient's record.
     - show the patient's record.
-    - share a patinet's record with a doctor.
-    - add a consultation record to a patient's record.
+    - share a patient's record with a doctor.
+    - add a consultation record to the patient's record.
     - access patient's record under emergency situations, SOS.
 - A **`server`** ...
 - A **`database`** to store persistent information on the patient's record 
