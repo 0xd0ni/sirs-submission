@@ -5,14 +5,19 @@
 
 (_Provide a brief overview of your project, including the business scenario and the main components: secure documents, infrastructure, and security challenge._)
 
-(_Include a structural diagram, in UML or other standard notation._)
+
+
+<img src='img/structural-diagram.webp' height='500'> 
+
 
 ## 2. Project Development
 
 
 ### 2.1. Secure Document Format
 
+
 #### 2.1.1. Design
+
 
 #### Core Document Format
 Let's start out by looking at our core document format that we aimed to secure - a patient's record:
@@ -151,7 +156,7 @@ Our secure document format has two main fields (keys):
       - denotes the Base 64 encoded, signed digest of the record object. Note that: the hash is later encrypted with RSA using the server's 
         private key, which in turn provides an additional layer of both, **`integrity`** and **`authenticity`**.
 
-All in all, our secure document format is as bellow:
+All in all, our `secure document format` is as bellow:
 
 ```json
 {
