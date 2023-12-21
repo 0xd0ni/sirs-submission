@@ -260,19 +260,16 @@ Ideally we should complement the usage of firewall rules with tls connection. Th
 
 #### 2.3.1. Challenge Overview
 
-(_Describe the new requirements introduced in the security challenge and how they impacted your original design._)
-
 1) The security challenge requires that a user can share specific fields of his record with specific doctors.
 2) It is also stated that the record's safety should have a way to be overridden in case of an emergency.
 3) Finally, each consultationRecord should be signed by the doctor.
 #### 2.3.2. Attacker Model
 
-(_Define who is fully trusted, partially trusted, or untrusted._)
+##### Trusted entities
 We trust a doctor who signs a record, but he has limited control over the system: he cannot delete records, only add. Additionally, patients can trust doctors with read access to certain parts of their record.
 We trust the server to store the data. In normal conditions it doesn't have access to the data, but we trust it with storing the SOS keys.
 Todo: What about the patient?
-
-(_Define how powerful the attacker is, with capabilities and limitations, i.e., what can he do and what he cannot do_)
+##### Possible attacks and vulnerabilities
 The server could be a vector of attack to obtain the data, through the SOS keys.
 If the doctor's keys were compromised to the attacker he could add fake records and have access to the information that had been shared with that doctor.
 And if the patient's keys were compromised an attacker could give read access to the patient's record to any doctor.
@@ -287,11 +284,10 @@ And if the patient's keys were compromised an attacker could give read access to
 
 ## 3. Conclusion
 
-(_State the main achievements of your work._)
-
-(_Describe which requirements were satisfied, partially satisfied, or not satisfied; with a brief justification for each one._)
-
-(_Identify possible enhancements in the future._)
+### Achievements
+Users can store their record with an assumption that their data is secure. They can share their records with their doctors and the doctors can have special access in emergencies.
+Unfortunately we weren't able to fully implement the addition of signed records by the doctors but a consultation record can be signed and verified.
+### Things that could be improved
 Ideally use of the SOS keys would require special authentication of the person accessing it, and a record of the accesses would be kept for accountability.
 (_Offer a concluding statement, emphasizing the value of the project experience._)
 
