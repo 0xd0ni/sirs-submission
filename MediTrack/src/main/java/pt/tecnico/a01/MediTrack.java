@@ -117,9 +117,8 @@ public class MediTrack
                 if(args.length == 2) {
                     System.out.println(MESSAGE_CHECK);
                     try {
-                        Key userPrivate = CryptoLibrary.readPrivateKey(userPrivateKeyPath);
                         Key serverPublic = CryptoLibrary.readPublicKey(serverPublicKeyPath);
-                        CryptoLibrary.check(inputFile, userPrivate, serverPublic);
+                        CryptoLibrary.check(inputFile, serverPublic);
 
                     } catch(Exception e) {
                         System.out.println(ERROR_CHECK + e);

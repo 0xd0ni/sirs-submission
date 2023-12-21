@@ -219,16 +219,15 @@ public class CryptoLibrary {
      * refreshToken.
      *
      * @param inputFile     The path of the input file containing the JSON object to be decrypted.
-     * @param userPrivate    The private key of the user, used to decrypt the freshness.
+     * @param serverPublic    The public key of the server, used to verify freshness and integrity.
      * (Perhaps we should change the use of the user's key and use the server's private key to send this too and generate the freshness token only when sending.
      * Especially because other doctors might access it who don't have the user's private key)
-     * @param serverPublic    The private key of the user, used to decrypt the hash
      * @throws Exception    If any error occurs during file reading/writing or encryption processes.
      */
-    public static void check(String inputFile, Key userPrivate, Key serverPublic) throws Exception {
+    public static void check(String inputFile, Key serverPublic) throws Exception {
 
         JsonObject rootJson = readFileToJsonObject(inputFile);
-        check(rootJson, userPrivate, serverPublic);
+        check(rootJson, serverPublic);
 
     }
         
@@ -241,13 +240,12 @@ public class CryptoLibrary {
      * refreshToken.
      *
      * @param rootJson     The JSON object to be decrypted.
-     * @param userPrivate    The private key of the user, used to decrypt the freshness.
+     * @param serverPublic    The public key of the server, used to verify freshness and integrity.
      * (Perhaps we should change the use of the user's key and use the server's private key to send this too and generate the freshness token only when sending.
      * Especially because other doctors might access it who don't have the user's private key)
-     * @param serverPublic    The private key of the user, used to decrypt the hash
      * @throws Exception    If any error occurs during file reading/writing or encryption processes.
      */
-    public static boolean check(JsonObject rootJson, Key userPrivate, Key serverPublic) throws Exception {
+    public static boolean check(JsonObject rootJson, Key serverPublic) throws Exception {
 
         JsonObject recordObject = rootJson.get(RECORD).getAsJsonObject();
 
@@ -255,7 +253,7 @@ public class CryptoLibrary {
         byte[] decryptedHash = rsaDecrypt(Base64.getDecoder().decode(storedHashBase64), serverPublic);
         byte[] computedHash = createDigest(recordObject);
         String refreshTokenBase64 = rootJson.get(METADATA).getAsJsonObject().get(REFRESH_TOKEN).getAsString();
-        String refreshToken =  getRefreshToken(refreshTokenBase64, userPrivate);
+        String refreshToken =  getRefreshToken(refreshTokenBase64, serverPublic);
         
         boolean integrityStatus = compareHashes(decryptedHash, computedHash);
         boolean freshnessStatus = compareRefreshTokenInterval(refreshToken,FRESHNESS_RANGE);
@@ -714,7 +712,7 @@ public class CryptoLibrary {
         encryptMetadataWithoutDigest(metadata, userPublic, sosPublic);
 
         byte[] freshnessBytes = Instant.now().toString().getBytes();
-        byte[] encryptedFreshness = rsaEncrypt(freshnessBytes, userPublic);
+        byte[] encryptedFreshness = rsaEncrypt(freshnessBytes, serverPrivate);
         String freshnessEncoded = Base64.getEncoder().encodeToString(encryptedFreshness);
         metadata.addProperty(REFRESH_TOKEN, freshnessEncoded);
 
@@ -773,6 +771,7 @@ public class CryptoLibrary {
             if (keys.get(field) == null) {
                 continue;
             }
+            System.out.println("Decrypting field: " + field);
             byte[] encryptedKey = Base64.getDecoder().decode(keys.get(field).getAsString());
             byte[] decryptedKey = rsaDecrypt(encryptedKey, userPrivate);
             Key key = new SecretKeySpec(decryptedKey, 0, decryptedKey.length, ALGORITHM_AES);
@@ -969,16 +968,16 @@ public class CryptoLibrary {
     /**
      * 
      * @param rootJson
-     * @param userPublic
+     * @param serverPrivate
      * @return
      * @throws Exception
      */
-    public static JsonObject addFreshness(JsonObject rootJson, Key userPublic) throws Exception {
+    public static JsonObject addFreshness(JsonObject rootJson, Key serverPrivate) throws Exception {
         JsonObject encryptedRecord = rootJson.get(RECORD).getAsJsonObject();
         JsonObject metadata = rootJson.get(METADATA).getAsJsonObject();
 
         byte[] freshnessBytes = Instant.now().toString().getBytes();
-        byte[] encryptedFreshness = rsaEncrypt(freshnessBytes, userPublic);
+        byte[] encryptedFreshness = rsaEncrypt(freshnessBytes, serverPrivate);
         String freshnessEncoded = Base64.getEncoder().encodeToString(encryptedFreshness);
         metadata.addProperty(REFRESH_TOKEN, freshnessEncoded);
 

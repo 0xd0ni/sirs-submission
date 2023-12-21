@@ -1,4 +1,5 @@
 package main.java.pt.tecnico.a01.server;
+import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
@@ -8,8 +9,11 @@ import java.security.NoSuchAlgorithmException;
 import javax.net.ssl.SSLContext;
 import com.mongodb.ConnectionString;
 import com.mongodb.client.model.Updates;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.model.Filters;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Iterator;
 import java.util.stream.StreamSupport;
 import java.util.Optional;
 
@@ -110,7 +114,7 @@ public class MedicalRecordRepository{
     public String addKeys(String doctorName, String patientName, String keys) {
         String currentKeys = findKeys(doctorName, patientName);
         if (currentKeys == null) {
-            this.database.getCollection("doctorName").insertOne(new Document().append("name", patientName).append("keys", Document.parse(keys)));
+            this.database.getCollection(doctorName).insertOne(new Document().append("name", patientName).append("keys", Document.parse(keys)));
             return keys;
         }
         Document keysDocument = Document.parse(keys);

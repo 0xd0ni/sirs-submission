@@ -27,10 +27,33 @@ public class ServerApplication {
 					return e.getMessage();
 				}
 			});
-			post("keys/:doctorName/:patientName", (req, res) -> {
+
+			get("/keys/:doctorName/:patientName", (req, res) -> {
+				try {
+					String keys = medicalRecordService.getKeys(req.params(":doctorName"), req.params(":patientName"));
+					if (keys == null) {
+						throw new Exception("Keys not found");
+					}
+					return keys;
+				} catch (Exception e) {
+					res.status(404);
+					return e.getMessage();
+				}
+			});
+
+			post("/keys/:doctorName/:patientName", (req, res) -> {
 				try {
 					medicalRecordService.shareKeys(req.params(":doctorName"), req.params(":patientName"), req.body());
 					return "OK";
+				} catch (Exception e) {
+					res.status(404);
+					return e.getMessage();
+				}
+			});
+
+			get("/sos/:patientName/:doctorName/:keyfile", (req, res) -> {
+				try {
+					return medicalRecordService.getSosKeys(req.params(":patientName"), req.params(":doctorName"), req.params(":keyfile"));
 				} catch (Exception e) {
 					res.status(404);
 					return e.getMessage();
