@@ -3,8 +3,7 @@
 ## 1. Introduction
 
 
-(_Provide a brief overview of your project, including the business scenario and the main components: secure documents, infrastructure, and security challenge._)
-
+This project focuses on creating MediTrack, an Electronic Health Records (EHR) system, designed for the secure management of patient information within Portugal's healthcare facilities. This digital record encompasses extensive details about a patient's individual health history ranging from personal details to consultation records. Utilized by hospitals and clinics, MediTrack enables physicians to input and access records of medical consultations.
 
 
 <img src='img/structural-diagram.webp' height='500'> 
