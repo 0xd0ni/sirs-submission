@@ -224,12 +224,9 @@ The cryptography library heavily utilized various Java packages, including:
 
 
 Our core cryptographic library provides operations such as:
-  - `protect (input-file) (output-file) ...` - add security to a document
-  - `unprotect (input-file) (output-file) ...` - remove security from a document
+  - `protect (input-file) (output-file)` - add security to a document
+  - `unprotect (input-file) (output-file)` - remove security from a document
   - `check (input-file)` - verify security of a document
-  - "note that: `...` denotes 0 or more arguments are expected.
-  - These arguments can be any of the following:
-    - [ name , sex, dateOfBirth, bloodType, knownAllergies, ConsultationRecords ]
 
 Our cryptographic library allows us to both `protect` and `unprotect` specified fields of our core document format.
 
@@ -261,8 +258,49 @@ Ideally we should complement the usage of firewall rules with tls connection. Th
 #### 2.3.1. Challenge Overview
 
 1) The security challenge requires that a user can share specific fields of his record with specific doctors.
+  TODO:
 2) It is also stated that the record's safety should have a way to be overridden in case of an emergency.
+  - We have extended our secure document format:
+  ```json
+    ```json
+  "metadata": {
+    "iv": {
+      "name": "",
+      "sex": "",
+      "dateOfBirth": "",
+      "bloodType": "",
+      "knownAllergies": "",
+      "consultationRecords": ""
+    },
+    "keys": {
+      "name": "",
+      "sex": "",
+      "dateOfBirth": "",
+      "bloodType": "",
+      "knownAllergies": "",
+      "consultationRecords": ""
+    },
+    "sos": {
+      "name": "",
+      "sex": "",
+      "dateOfBirth": "",
+      "bloodType": "",
+      "knownAllergies": "",
+      "consultationRecords": ""
+    },
+    "refreshToken": "",
+    "hash": ""
+  }
+  ```
+  - We have now a particular set of encrypted keys used only in SOS operations.
 3) Finally, each consultationRecord should be signed by the doctor.
+  - We have updated our cryptography library, besides the three main operations: 
+    - `protect()`,  `unprotect()`, `check()`.
+  - We have added two new operations specifically for handling consultation records.
+    - `sign (input-file) (output-file) (physician-private-key)`
+    - `verify-sign (input-file) (physician-public-key)`
+                                           
+  
 #### 2.3.2. Attacker Model
 
 ##### Trusted entities
