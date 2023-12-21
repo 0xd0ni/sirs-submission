@@ -238,26 +238,31 @@ We did have such an instance, which we successfully resolved by using pair progr
 
 #### 2.2.1. Network and Machine Setup
 
-(_Provide a brief description of the built infrastructure._)
+
 
 In our project we have 2 switches(sw-1 and sw-2), so we can connect the database machine to server machine and this one with the client machine.
 We are using 4 ip adresses, so we can assign properly VMs with the interfaces we need to use.
 
-(_Justify the choice of technologies for each server._)
+
 
 #### 2.2.2. Server Communication Security
 
-(_Discuss how server communications were secured, including the secure channel solutions implemented and any challenges encountered._)
 
 To secure our communications we set a firewall rule on database machine, where we only allow communications for mongodb port(27017) and the ip of the server (192.168.56.11).
 Ideally we should complement the usage of firewall rules with tls connection. This way, besides controlling the traffic in the network we could achieve confidentiality and integrity in the communication. We tried to do that, but because of a Java bug we could not provide TLS connection.
-(_Explain what keys exist at the start and how are they distributed?_)
+
 
 ### 2.3. Security Challenge
 
 #### 2.3.1. Challenge Overview
 
 1) The security challenge requires that a user can share specific fields of his record with specific doctors.
+  - We have expanded the command line arguments for both `protect` and `unprotect`
+ - `protect (input-file) (output-file) ...` - add security to a document
+  - `unprotect (input-file) (output-file) ...` - remove security from a document
+  - "note that: `...` denotes 0 or more arguments are expected.
+  - These arguments can be any of the following:
+    - [ name , sex, dateOfBirth, bloodType, knownAllergies, ConsultationRecords ]
 
 2) It is also stated that the record's safety should have a way to be overridden in case of an emergency.
   - We have expanded our secure document format:
@@ -310,7 +315,7 @@ Ideally we should complement the usage of firewall rules with tls connection. Th
   - We have added two new operations specifically for handling consultation records.
     - `sign (input-file) (output-file) (physician-private-key)`
     - `verify-sign (input-file) (physician-public-key)`
-  - Our consultation record document as also updated as shown bellow:
+  - Our consultation record document was also updated as shown bellow:
   ```json
   {
   "date": "",
@@ -335,10 +340,10 @@ If the doctor's keys were compromised to the attacker he could add fake records 
 And if the patient's keys were compromised an attacker could give read access to the patient's record to any doctor.
 #### 2.3.3. Solution Design and Implementation
 
-(_Explain how your team redesigned and extended the solution to meet the security challenge, including key distribution and other security measures._)
+
 1) Initially we envisioned a centralized server that could provide access to those fields, but this would violate the patient's privacy and make the data vulnerable to an attack on the server. Therefore, we opted to have the user share the keys with a specific doctor: he encrypts them with the doctor's public key and sends to the server, where the doctor can retrieve them when he needs.
 2) To fulfill this requirement, each protected document includes a set of the symmetric keys that is encrypted with a special SOS key. When an emergency situation occurs, this key, that should be stored securely, provides access to the file.
-3) TO DO
+
 
 <img src='img/PublishRecordAsPatient.png'> <img src='img/ShareKeys.png'> <img src='img/AcessAsDoctor.png'> <img src='img/AddConsultationRecordAsDoctor.png'> <img src='img/SOS.png'>
 
@@ -349,7 +354,7 @@ Users can store their record with an assumption that their data is secure. They 
 Unfortunately we weren't able to fully implement the addition of signed records by the doctors but a consultation record can be signed and verified.
 ### Things that could be improved
 Ideally use of the SOS keys would require special authentication of the person accessing it, and a record of the accesses would be kept for accountability.
-(_Offer a concluding statement, emphasizing the value of the project experience._)
+
 
 ## 4. Bibliography
 
