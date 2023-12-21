@@ -149,7 +149,7 @@ Our secure document format has two main fields (keys):
         Our freshness is simply a timestamp of when the secured record was created.
   4. **`hash`**
       - denotes the Base 64 encoded, signed digest of the record object. Note that: the hash is later encrypted with RSA using the server's 
-        private key, which in turn provides an additional layer of , **`authenticity`**.
+        private key, which in turn provides an additional layer of both, **`integrity`** and **`authenticity`**.
 
 All in all, our secure document format is as bellow:
 
@@ -185,15 +185,6 @@ All in all, our secure document format is as bellow:
   }
 }
 ```
-
-   
-
-      
-
-
-(_Outline the design of your custom cryptographic library and the rationale behind your design choices, focusing on how it addresses the specific needs of your chosen business scenario._)
-
-(_Include a complete example of your data format, with the designed protections._)
 
 #### 2.1.2. Implementation
 
