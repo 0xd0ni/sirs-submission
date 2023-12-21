@@ -95,10 +95,6 @@ public class ClientHttp {
     public JsonObject getRecordAsPatient(String name, Key userPrivate, Key serverPublic) {
         try {
             JsonObject encryptedRecord = getRecord(name);
-            {
-                // remove this block
-                printRecord(CryptoLibrary.unprotect(encryptedRecord, userPrivate));
-            }
             System.out.println("Checking record");
             boolean healthy = CryptoLibrary.check(encryptedRecord, serverPublic);
             if (!healthy) {
@@ -118,7 +114,7 @@ public class ClientHttp {
             JsonObject doctorsKeys = getKeys(doctorName, patientName);
             System.out.println("Doctors keys: " + gson.toJson(doctorsKeys));
             System.out.println("Checking record");
-            boolean healthy = true;//CryptoLibrary.check(encryptedRecord, serverPublic);
+            boolean healthy = CryptoLibrary.check(encryptedRecord, serverPublic);
             if (!healthy) {
                 System.out.println("Record is not healthy");
                 return null;

@@ -44,6 +44,7 @@ public class MedicalRecordService {
         }
         JsonObject medicalRecordObject = gson.fromJson(medicalRecord, JsonObject.class);
         CryptoLibrary.addFreshness(medicalRecordObject, serverPrivate);
+        CryptoLibrary.addDigest(medicalRecordObject, serverPrivate);
         return gson.toJson(medicalRecordObject);
     }
     public String saveMedicalRecord(String carrierJson) throws Exception {
@@ -51,7 +52,6 @@ public class MedicalRecordService {
         try {
             medicalRecordJson = gson.fromJson(carrierJson, JsonObject.class);
             // check integrity before adding?
-            CryptoLibrary.addDigest(medicalRecordJson, serverPrivate);
         }
         catch(Exception e){
             throw new Exception("Invalid record + " + carrierJson);
@@ -87,7 +87,6 @@ public class MedicalRecordService {
             consultationRecords.add(consultationRecord);
             record.add("consultations", consultationRecords.getAsJsonObject());
             try {
-                CryptoLibrary.addDigest(record, serverPrivate);
                 medicalRecordRepository.save(gson.toJson(medicalRecordJson));
             } catch (Exception e) {
                 e.printStackTrace();

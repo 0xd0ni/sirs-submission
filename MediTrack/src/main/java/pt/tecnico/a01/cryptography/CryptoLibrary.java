@@ -961,7 +961,7 @@ public class CryptoLibrary {
         String hashBase64 = digestAndEncrypt(encryptedRecord, serverPrivate);
         metadata.addProperty(HASH, hashBase64);
 
-        encryptedRecord.add(METADATA,metadata);
+        rootJson.add(METADATA,metadata);
         
         return encryptedRecord;
     }
@@ -982,7 +982,7 @@ public class CryptoLibrary {
         String freshnessEncoded = Base64.getEncoder().encodeToString(encryptedFreshness);
         metadata.addProperty(REFRESH_TOKEN, freshnessEncoded);
 
-        encryptedRecord.add(METADATA,metadata);
+        rootJson.add(METADATA,metadata);
         return encryptedRecord;
     }
 
