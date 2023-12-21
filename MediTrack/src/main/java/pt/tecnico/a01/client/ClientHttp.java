@@ -55,13 +55,9 @@ public class ClientHttp {
     public void saveRecordAsPatient(JsonObject record, Key patientPublic, Key sosPublic) {
         try {
             // REMOVE SERVER PRIVATE KEY
-            System.out.println(gson.toJson(record));
             JsonObject encryptedRecord = CryptoLibrary.protect(record, patientPublic, sosPublic);
-            System.out.println("getting patient");
             record.get("patient").getAsJsonObject();
-            System.out.println("got patient");
             record.get("patient").getAsJsonObject().get("name").getAsString();
-            System.out.println("got name");
             encryptedRecord.addProperty("name", record.get("patient").getAsJsonObject().get("name").getAsString());
             saveRecord(encryptedRecord);
         }
