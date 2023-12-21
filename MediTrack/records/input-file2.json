@@ -1,0 +1,45 @@
+{
+    "patient": {
+      "name": "Mafalda",
+      "sex": "Nonconforming",
+      "dateOfBirth": "1970-11-16",
+      "bloodType": "A+",
+      "knownAllergies": [
+        "Iodine",
+        "Wheat",
+        "Shellfish",
+        "Celery",
+        "Aspirin"
+      ],
+      "consultationRecords": [
+        {
+          "date": "1959-05-27",
+          "medicalSpecialty": "Cardiology",
+          "doctorName": "Dr. FU.",
+          "practice": "Cardiology Clinic",
+          "treatmentSummary": "Routine Check-up"
+        },
+        {
+          "date": "1945-09-15",
+          "medicalSpecialty": "Ophthalmology",
+          "doctorName": "Dr. XI.",
+          "practice": "Ophthalmology Health Center",
+          "treatmentSummary": "Minor Surgery"
+        },
+        {
+          "date": "1966-06-05",
+          "medicalSpecialty": "Psychiatry",
+          "doctorName": "Dr. JZ.",
+          "practice": "Psychiatry Clinic",
+          "treatmentSummary": "Dental Cleaning"
+        },
+        {
+          "date": "2011-10-22",
+          "medicalSpecialty": "Oncology",
+          "doctorName": "Dr. NP.",
+          "practice": "Oncology Clinic",
+          "treatmentSummary": "Physical Therapy"
+        }
+      ]
+    }
+  }

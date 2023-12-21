@@ -81,9 +81,10 @@ This machine runs ...
 
 After running the script inside scripts/client folder, we can run our server by doing the following.
 
+
 ```
 vagrant@client:~$ cd projects/Meditrack 
-vagrant@client:~/projects/Meditrack$ ./target/appassembler/bin/Client
+vagrant@client:~/projects/Meditrack$ ./target/appassembler/bin/Client -a 192.168.57.254:4000
 ```
 
 ## Demonstration
@@ -92,8 +93,39 @@ Now that all the networks and machines are up and running, ...
 
 *(give a tour of the best features of the application; add screenshots when relevant)*
 
-```sh
-$ demo command
+Log in as a patient
+```
+--p Bob
+```
+
+Publish a record
+```
+--r ./records/Bob.json
+```
+
+Verify it's contents
+```
+-show
+```
+
+Share fields with doctor Smith
+```
+-share Smith name sex knownAllergies
+```
+
+Log in as doctor
+```
+--d Smith
+```
+
+Verify a patient's files
+```
+-show Bob
+```
+
+Access the record in an emergency
+```
+--e Bob
 ```
 
 *(replace with actual commands)*
@@ -102,6 +134,47 @@ $ demo command
 
 This concludes the demonstration.
 
+## To test the Cryptographic Library by itself
+
+run  protect examples
+```sh
+./target/appassembler/bin/MediTrack protect ./records/input-file1.json ./records/output-file1.json
+```
+```sh
+./target/appassembler/bin/MediTrack protect ./records/input-file2.json ./records/output-file2.json
+```
+
+---
+run  unprotect examples
+```sh
+./target/appassembler/bin/MediTrack unprotect ./records/output-file1.json ./records/result1.json
+```
+```sh
+./target/appassembler/bin/MediTrack unprotect ./records/output-file2.json ./records/result2.json
+```
+
+---
+run check examples
+```sh
+./target/appassembler/bin/MediTrack check ./records/output-file1.json
+```
+
+```sh
+./target/appassembler/bin/MediTrack check ./records/output-file2.json
+```
+
+
+---
+
+run sign examples
+```sh
+./target/appassembler/bin/MediTrack sign ./records/consultation-record1.json ./records/signed-consultation-record1.json ../keys/drSmithpriv.key
+```
+
+run verify-sign examples
+```sh
+./target/appassembler/bin/MediTrack verify-sign ./records/signed-consultation-record1.json ../keys/drSmithpub.key
+```
 ## Additional Information
 
 ### Links to Used Tools and Libraries
