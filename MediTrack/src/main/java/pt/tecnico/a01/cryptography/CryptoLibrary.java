@@ -774,6 +774,7 @@ public class CryptoLibrary {
             System.out.println("Decrypting field: " + field);
             byte[] encryptedKey = Base64.getDecoder().decode(keys.get(field).getAsString());
             byte[] decryptedKey = rsaDecrypt(encryptedKey, userPrivate);
+            System.out.println("Decrypted key: " + Base64.getEncoder().encodeToString(decryptedKey));
             Key key = new SecretKeySpec(decryptedKey, 0, decryptedKey.length, ALGORITHM_AES);
     
             byte[] bytes = recordObject.get(field).getAsString().getBytes();
@@ -819,7 +820,7 @@ public class CryptoLibrary {
             if (keys.get(field) == null) {
                 continue;
             }
-            byte[] bytes = keys.get(field).getAsString().getBytes();
+            byte[] bytes = Base64.getDecoder().decode(keys.get(field).getAsString());
             byte[] encryptedBytes = null;
             try {
                 encryptedBytes = rsaEncrypt(bytes, doctorPublic);

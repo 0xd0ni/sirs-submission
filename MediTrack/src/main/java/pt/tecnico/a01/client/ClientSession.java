@@ -271,10 +271,11 @@ public class ClientSession {
         } else if (cmd.hasOption("show")) {
             String patientName = cmd.getOptionValue("show");
             try {
-                this.clientHttp.getRecordAsDoctor(patientName, userName, userPrivate, serverPublic);
+                JsonObject record = this.clientHttp.getRecordAsDoctor(patientName, userName, userPrivate, serverPublic);
                 if (record == null) {
                     return DOCTOR;
                 }
+                this.clientHttp.printRecord(record);
             } catch (Exception e) {
                 System.out.println("Error: " + e.getMessage());
                 return DOCTOR;
@@ -286,10 +287,11 @@ public class ClientSession {
                 if (keyfile == null) {
                     throw new Exception("Doctor does not exist");
                 }
-                this.clientHttp.getRecordInSos(patientName, userName, userPrivate, keyfile);
+                JsonObject record = this.clientHttp.getRecordInSos(patientName, userName, userPrivate, keyfile);
                 if (record == null) {
                     return DOCTOR;
                 }
+                this.clientHttp.printRecord(record);
             } catch (Exception e) {
                 System.out.println("Error: " + e.getMessage());
                 return DOCTOR;
