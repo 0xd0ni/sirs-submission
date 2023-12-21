@@ -5,7 +5,7 @@
 
 This project focuses on creating MediTrack, an Electronic Health Records (EHR) system, designed for the secure management of patient information within Portugal's healthcare facilities. This digital record encompasses extensive details about a patient's individual health history ranging from personal details to consultation records. Utilized by hospitals and clinics, MediTrack enables physicians to input and access records of medical consultations.
 
-### 1.1 Overview
+### 1.1. Overview
 The MediTrack system can function as either a three-tier system or as a single-tier system when using the cryptography library by itself.
 
 As a three-tier system:
@@ -19,16 +19,14 @@ As a three-tier system:
     - add a consultation record to the patient's record.
     - access patient's record under emergency situations, SOS.
 - A **`server`**:
-  
+  - The server acts as a middleman between the client and the database.
+  - handling client requests, controlling SOS keys, and adding freshness tokens and digests.
 - A **`database`**:
   - to store persistent information on the patient's record and shared keys between patients and physicians.
  
 
+The three-tier system architecture shown bellow:
 
-
-
-
-. 
 
 <img src='img/structural-diagram.webp' height='500'> 
 
