@@ -39,8 +39,7 @@ A consultation record has the following format:
   "medicalSpeciality": "",
   "doctorName": "",
   "practice": "",
-  "treatmentSummary": "",
-  "digitalSignature" : ""
+  "treatmentSummary": ""
 }
 ```
 
@@ -100,15 +99,15 @@ Our secure document format has two main fields (keys):
     "consultationRecords": ""
   }
   ```
-  Each key has exactly the same name as the keys present in the original document core format.
+  Each key has exactly the same name as the keys present in the original core document format.
 
 
-  Each value corresponds to the base 64 encoded and symmetric key secured representation of the value present in the core format.
+  Each value corresponds to the base 64 encoded and symmetric key secured representation of the values present in the core format.
 
 
-  Note that: each value in the record object is secured with a different AES symmetric key, more on that in **`metadata`**
+  Note that: each value in the record object is secured with a different AES symmetric key, more on that in **`metadata`**.
 
-- **`metadata`**,
+- **`metadata`**
 
 
   The metadata object has the format shown bellow:
@@ -151,6 +150,41 @@ Our secure document format has two main fields (keys):
   4. **`hash`**
       - denotes the Base 64 encoded, signed digest of the record object. Note that: the hash is later encrypted with RSA using the server's 
         private key, which in turn provides an additional layer of , **`authenticity`**.
+
+All in all, our secure document format is as bellow:
+
+```json
+{
+    "record": {
+    "name": "",
+    "sex": "",
+    "dateOfBirth": "",
+    "bloodType": "",
+    "knownAllergies": "",
+    "consultationRecords": ""
+  },
+   "metadata": {
+    "iv": {
+      "name": "",
+      "sex": "",
+      "dateOfBirth": "",
+      "bloodType": "",
+      "knownAllergies": "",
+      "consultationRecords": ""
+    },
+    "keys": {
+      "name": "",
+      "sex": "",
+      "dateOfBirth": "",
+      "bloodType": "",
+      "knownAllergies": "",
+      "consultationRecords": ""
+    },
+    "refreshToken": "",
+    "hash": ""
+  }
+}
+```
 
    
 
