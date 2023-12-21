@@ -223,11 +223,19 @@ The cryptography library heavily utilized various Java packages, including:
   - **`java.crypto.*`**
 
 
+Our core cryptographic library provides operations such as:
+  - `protect (input-file) (output-file) ...` - add security to a document
+  - `unprotect (input-file) (output-file) ...` - remove security from a document
+  - `check (input-file)` - verify security of a document
+  - "note that: `...` denotes 0 or more arguments are expected.
+  - These arguments can be any of the following:
+    - [ name , sex, dateOfBirth, bloodType, knownAllergies, ConsultationRecords ]
 
-
-(_Detail the implementation process, including the programming language and cryptographic libraries used._)
-
-(_Include challenges faced and how they were overcome._)
+Our cryptographic library allows us to both `protect` and `unprotect` specified fields of our core document format.
+                    
+As noted earlier, our shift from ECB to CBC mode required modifications to our secure document format.
+We encountered repeated challenges with padding and converting bytes between formats, where even a slight oversight could potentially cause a significant bug.
+We did have such an instance, which we successfully resolved by using pair programming for team debugging.
 
 ### 2.2. Infrastructure
 
