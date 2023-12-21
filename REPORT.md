@@ -3,7 +3,7 @@
 ## 1. Introduction
 
 
-This project focuses on creating MediTrack, an Electronic Health Records (EHR) system, designed for the secure management of patient information within Portugal's healthcare facilities. This digital record encompasses extensive details about a patient's individual health history ranging from personal details to consultation records. Utilized by hospitals and clinics, MediTrack enables physicians to input and access records of medical consultations.
+This project focuses on creating _MediTrack_, an Electronic Health Records (EHR) system, designed for the secure management of patient information within Portugal's healthcare facilities. This digital record encompasses extensive details about a patient's individual health history ranging from personal details to consultation records. Utilized by hospitals and clinics, MediTrack enables physicians to input and access records of medical consultations.
 
 ### 1.1. Overview
 The MediTrack system can function as either a three-tier system or as a single-tier system when using the cryptography library by itself.
