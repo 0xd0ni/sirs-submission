@@ -23,12 +23,12 @@ As a three-tier system:
   - handling client requests, controlling SOS keys, and adding freshness tokens and digests.
 - A **`database`**:
   - to store persistent information on the patient's record and shared keys between patients and physicians.
- 
+
 
 The three-tier system architecture shown bellow:
 
 
-<img src='img/structural-diagram.webp' height='500'> 
+<img src='img/structural-diagram.webp' height='500'>
 
 
 ## 2. Project Development
@@ -111,7 +111,7 @@ Here is the patient's full MediTrack record as of now:
 #### Secure Document Format
 
 Our secure document format has two main fields (keys):
-- **`record`** 
+- **`record`**
 
 
   The record object has the following format:
@@ -164,17 +164,17 @@ Our secure document format has two main fields (keys):
       - denotes the Initialization Vector, used to perform a more secure encryption/decryption mechanism (CBC),
         note that, we were intially using ECB mode and with that we did not have the IV.
         We have opted to switch from ECB to CBC since the former mode leaks information about the plaintext since identical
-        plaintext blocks produce identical ciphertext blocks while the latter does not. Both of these provide **`confidentiality`** 
+        plaintext blocks produce identical ciphertext blocks while the latter does not. Both of these provide **`confidentiality`**
         Note that: Each field (key) has a different iv encoded in Base 64.
   2. **`keys`**
       - denotes the AES symmetric keys, used to secure the value of each of the fields of the core document format,
         note that, each of the AES symmetric keys is later encrypted with RSA using the patient's public key and subsequently encoded in Base 64, the former provides, **`authenticity`**.
-  
+
   3. **`refreshToken`**
       - denotes the freshness of the secured record, and it ensures guarantees against **`replay attacks`**.
         Our freshness is simply a timestamp of when the secured record was created.
   4. **`hash`**
-      - denotes the Base 64 encoded, signed digest of the record object. Note that: the hash is later encrypted with RSA using the server's 
+      - denotes the Base 64 encoded, signed digest of the record object. Note that: the hash is later encrypted with RSA using the server's
         private key, which in turn provides an additional layer of both, **`integrity`** and **`authenticity`**.
 
 All in all, our `secure document format` is as bellow:
@@ -232,7 +232,7 @@ Our core cryptographic library provides operations such as:
     - [ name , sex, dateOfBirth, bloodType, knownAllergies, ConsultationRecords ]
 
 Our cryptographic library allows us to both `protect` and `unprotect` specified fields of our core document format.
-                    
+
 As noted earlier, our shift from ECB to CBC mode required modifications to our secure document format.
 We encountered repeated challenges with padding and converting bytes between formats, where even a slight oversight could potentially cause a significant bug.
 We did have such an instance, which we successfully resolved by using pair programming for team debugging.
@@ -243,7 +243,7 @@ We did have such an instance, which we successfully resolved by using pair progr
 
 (_Provide a brief description of the built infrastructure._)
 
-In our project we have 2 switches(sw-1 and sw-2), so we can connect the database machine to server machine and this one with the client machine. 
+In our project we have 2 switches(sw-1 and sw-2), so we can connect the database machine to server machine and this one with the client machine.
 We are using 4 ip adresses, so we can assign properly VMs with the interfaces we need to use.
 
 (_Justify the choice of technologies for each server._)
@@ -252,7 +252,7 @@ We are using 4 ip adresses, so we can assign properly VMs with the interfaces we
 
 (_Discuss how server communications were secured, including the secure channel solutions implemented and any challenges encountered._)
 
-To secure our communications we set a firewall rule on database machine, where we only allow communications for mongodb port(27017) and the ip of the server (192.168.56.11). 
+To secure our communications we set a firewall rule on database machine, where we only allow communications for mongodb port(27017) and the ip of the server (192.168.56.11).
 Ideally we should complement the usage of firewall rules with tls connection. This way, besides controlling the traffic in the network we could achieve confidentiality and integrity in the communication. We could not do that due to lack of time.
 (_Explain what keys exist at the start and how are they distributed?_)
 
@@ -282,7 +282,8 @@ And if the patient's keys were compromised an attacker could give read access to
 1) Initially we envisioned a centralized server that could provide access to those fields, but this would violate the patient's privacy and make the data vulnerable to an attack on the server. Therefore, we opted to have the user share the keys with a specific doctor: he encrypts them with the doctor's public key and sends to the server, where the doctor can retrieve them when he needs.
 2) To fulfill this requirement, each protected document includes a set of the symmetric keys that is encrypted with a special SOS key. When an emergency situation occurs, this key, that should be stored securely, provides access to the file.
 3) TO DO
-(_Identify communication entities and the messages they exchange with a UML sequence or collaboration diagram._)
+
+<img src='img/PublishRecordAsPatient.png'> <img src='img/ShareKeys.png'> <img src='img/AcessAsDoctor.png'> <img src='img/AddConsultationRecordAsDoctor.png'> <img src='img/SOS.png'>
 
 ## 3. Conclusion
 
