@@ -58,11 +58,11 @@ public class ClientSession {
         options.addOption("h", "help", false, "Show help.");
         options.addOption("a", "address", true, "Address to connect to. ip:port");
         
-        runtimeOptions.addOption("p", "patient", true, "Sign in as a patient. Usage: -u <name>");
+        runtimeOptions.addOption("p", "patient", true, "Sign in as a patient. Usage: -p <name>");
         runtimeOptions.addOption("d", "doctor", true, "Sign in as a doctor. Usage: -d <name>");
         runtimeOptions.addOption("q", "quit", false, "Quit the application. Usage: -q");
         
-        patientOptions.addOption("p", "patient", true, "Sign in as a patient. Usage: -u <name>");
+        patientOptions.addOption("p", "patient", true, "Sign in as a patient. Usage: -p <name>");
         patientOptions.addOption("d", "doctor", true, "Sign in as a doctor. Usage: -d <name>");
         patientOptions.addOption("r", "register", true, "Register a new patient and add record. Usage: -r <path to file>");
         patientOptions.addOption("s", "show", false, "Get a patient's record. Usage: -s");
@@ -71,7 +71,7 @@ public class ClientSession {
         patientOptions.addOption(share);
         patientOptions.addOption("q", "quit", false, "Quit the application. Usage: -q");
 
-        doctorOptions.addOption("p", "patient", true, "Sign in as a patient. Usage: -u <name>");
+        doctorOptions.addOption("p", "patient", true, "Sign in as a patient. Usage: -p <name>");
         doctorOptions.addOption("d", "doctor", true, "Sign in as a doctor. Usage: -d <name>");
         doctorOptions.addOption("s", "show", true, "Get a patient's record. Usage: -g <name>");
         doctorOptions.addOption("e", "emergency", true, "SOS. Get a patient's record in case of emergency. Usage: -e <name>");
