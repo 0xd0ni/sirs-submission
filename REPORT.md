@@ -258,7 +258,7 @@ Ideally we should complement the usage of firewall rules with tls connection. Th
 #### 2.3.1. Challenge Overview
 
 1) The security challenge requires that a user can share specific fields of his record with specific doctors.
-  - We 
+
 2) It is also stated that the record's safety should have a way to be overridden in case of an emergency.
   - We have expanded our secure document format:
   ```json
@@ -310,6 +310,17 @@ Ideally we should complement the usage of firewall rules with tls connection. Th
   - We have added two new operations specifically for handling consultation records.
     - `sign (input-file) (output-file) (physician-private-key)`
     - `verify-sign (input-file) (physician-public-key)`
+  - Our consultation record document as also updated as shown bellow:
+  ```json
+  {
+  "date": "",
+  "medicalSpeciality": "",
+  "doctorName": "",
+  "practice": "",
+  "treatmentSummary": "",
+  "digitalSignature": ""
+  }
+  ```
                                            
   
 #### 2.3.2. Attacker Model
