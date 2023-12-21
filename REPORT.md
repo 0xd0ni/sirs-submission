@@ -258,11 +258,10 @@ Ideally we should complement the usage of firewall rules with tls connection. Th
 #### 2.3.1. Challenge Overview
 
 1) The security challenge requires that a user can share specific fields of his record with specific doctors.
-  TODO:
+  - We 
 2) It is also stated that the record's safety should have a way to be overridden in case of an emergency.
-  - We have extended our secure document format:
+  - We have expanded our secure document format:
   ```json
-    ```json
   "metadata": {
     "iv": {
       "name": "",
@@ -293,6 +292,18 @@ Ideally we should complement the usage of firewall rules with tls connection. Th
   }
   ```
   - We have now a particular set of encrypted keys used only in SOS operations.
+  ```json
+   "sos": {
+      "name": "",
+      "sex": "",
+      "dateOfBirth": "",
+      "bloodType": "",
+      "knownAllergies": "",
+      "consultationRecords": ""
+    }
+  ```
+  - denotes the AES symmetric keys, used to secure the value of each of the fields of the core document format,
+    note that, each of the AES symmetric keys is later encrypted with RSA using a SOSO public key and subsequently encoded in Base 64
 3) Finally, each consultationRecord should be signed by the doctor.
   - We have updated our cryptography library, besides the three main operations: 
     - `protect()`,  `unprotect()`, `check()`.
