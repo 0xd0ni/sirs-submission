@@ -219,8 +219,8 @@ Java was chosen for its robust cryptographic functions and utilities, and becaus
 
 
 The cryptography library heavily utilized various Java packages, including:
-**`java.security.*`**
-**`java.crypto`**
+  - **`java.security.*`**
+  - **`java.crypto.*`**
 
 
 
