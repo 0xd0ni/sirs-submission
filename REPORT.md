@@ -99,13 +99,13 @@ Our secure document format has two main fields (keys):
     "consultationRecords": ""
   }
   ```
-  Each key has exactly the same name as the keys present in the original core document format.
+  1. Each key has exactly the same name as the keys present in the original core document format.
 
 
-  Each value corresponds to the base 64 encoded and symmetric key secured representation of the values present in the core format.
+  2. Each value corresponds to the base 64 encoded and symmetric key secured representation of the values present in the core format.
 
 
-  Note that: each value in the record object is secured with a different AES symmetric key, more on that in **`metadata`**.
+  3. Note that: each value in the record object is secured with a different AES symmetric key, more on that in **`metadata`**.
 
 - **`metadata`**
 
@@ -145,7 +145,7 @@ Our secure document format has two main fields (keys):
         note that, each of the AES symmetric keys is later encrypted with RSA using the patient's public key and subsequently encoded in Base 64, the former provides, **`authenticity`**.
   
   3. **`refreshToken`**
-      - denotes the freshness of the secured record, and it ensures guarantes against **`replay attacks`**.
+      - denotes the freshness of the secured record, and it ensures guarantees against **`replay attacks`**.
         Our freshness is simply a timestamp of when the secured record was created.
   4. **`hash`**
       - denotes the Base 64 encoded, signed digest of the record object. Note that: the hash is later encrypted with RSA using the server's 
