@@ -2,6 +2,7 @@
 
 ## 1. Introduction
 
+
 (_Provide a brief overview of your project, including the business scenario and the main components: secure documents, infrastructure, and security challenge._)
 
 (_Include a structural diagram, in UML or other standard notation._)
@@ -13,9 +14,38 @@
 
 #### 2.1.1. Design
 
+#### Core Document Format
+Let's start out by looking at our core document format that we aimed to secure - a patient's record:
 
-Let's first take a look at our core data format
-####  Example
+```json
+{
+  "patient": {
+    "name": "",
+    "sex": "",
+    "dateOfBirth": "",
+    "bloodType": "",
+    "knownAllergies": [""],
+    "consultationRecords": []
+  }
+}
+
+```
+
+A consultation record has the following format:
+
+```json
+{
+  "date": "",
+  "medicalSpeciality": "",
+  "doctorName": "",
+  "practice": "",
+  "treatmentSummary": "",
+  "digitalSignature" : ""
+}
+```
+
+Let's suppose, as an example, that we can access the medical records of a person named Bob.
+Here is the patient's full MediTrack record as of now:
 
 ```json
 {
@@ -50,12 +80,17 @@ Let's first take a look at our core data format
     ]
   }
 }
+
 ```
 
-#### Example - secure document format
+#### Secure Document Format
 
-``` json
-{
+Our secure document format has two main fields (keys):
+- **`record`** 
+
+
+  The record object has the following format:
+  ```json
   "record": {
     "name": "",
     "sex": "",
@@ -63,7 +98,21 @@ Let's first take a look at our core data format
     "bloodType": "",
     "knownAllergies": "",
     "consultationRecords": ""
-  },
+  }
+  ```
+  Each key has exactly the same name as the keys present in the original document core format.
+
+
+  Each value corresponds to the base 64 encoded and symmetric key secured representation of the value present in the core format.
+
+
+  Note that: each value in the record object is secured with a different AES symmetric key, more on that in **`metadata`**
+
+- **`metadata`**,
+
+
+  The metadata object has the format shown bellow:
+  ```json
   "metadata": {
     "iv": {
       "name": "",
@@ -81,36 +130,31 @@ Let's first take a look at our core data format
       "knownAllergies": "",
       "consultationRecords": ""
     },
-    "sos": {
-      "name": "",
-      "sex": "",
-      "dateOfBirth": "",
-      "bloodType": "",
-      "knownAllergies": "",
-      "consultationRecords": ""
-    },
     "refreshToken": "",
     "hash": ""
   }
-}
-```
+  ```
+  The metadata object has four main fields (keys).
+  1. **`iv`**
+      - denotes the Initialization Vector, used to perform a more secure encryption/decryption mechanism (CBC),
+        note that, we were intially using ECB mode and with that we did not have the IV.
+        We have opted to switch from ECB to CBC since the former mode leaks information about the plaintext since identical
+        plaintext blocks produce identical ciphertext blocks while the latter does not. Both of these provide **`confidentiality`** 
+        Note that: Each field (key) has a different iv encoded in Base 64.
+  2. **`keys`**
+      - denotes the AES symmetric keys, used to secure the value of each of the fields of the core document format,
+        note that, each of the AES symmetric keys is later encrypted with RSA using the patient's public key and subsequently encoded in Base 64, the former provides, **`authenticity`**.
+  
+  3. **`refreshToken`**
+      - denotes the freshness of the secured record, and it ensures guarantes against **`replay attacks`**.
+        Our freshness is simply a timestamp of when the secured record was created.
+  4. **`hash`**
+      - denotes the Base 64 encoded, signed digest of the record object. Note that: the hash is later encrypted with RSA using the server's 
+        private key, which in turn provides an additional layer of , **`authenticity`**.
 
+   
 
-TODO:
-1) describe each json objects
-
-Each json object contains a Medical Record of a patient. Each Medical Record contains all the fields described in this project scenario about the Meditrack and metadata.
-
-2) describe how the fields of each of the objects relate to the original
-
-3) describe in detail the security mechanism behind the metadata object;
-
-The metadata object has an initialization vector and keys for each field of the record. These keys are used for protecting/unprotecting the fields we need. We also have an SOS field in metadata in order to access a patient record in an emmergency situation.
-Finally we have refreshToken, so we can ensure freshness, and hashvalue to check the integrity of the data.
-
-4) talk extensively about authenticity and confidentiality
-45 exemplify operations and result
-
+      
 
 
 (_Outline the design of your custom cryptographic library and the rationale behind your design choices, focusing on how it addresses the specific needs of your chosen business scenario._)
