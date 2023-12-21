@@ -214,6 +214,17 @@ All in all, our `secure document format` is as bellow:
 
 #### 2.1.2. Implementation
 
+The secure document format and its cryptography library were fully developed in Java, utilizing Maven for build automation.
+Java was chosen for its robust cryptographic functions and utilities, and because most of the Course Laboratory work was also implemented in Java.
+
+
+The cryptography library heavily utilized various Java packages, including:
+**`java.security.*`**
+**`java.crypto`**
+
+
+
+
 (_Detail the implementation process, including the programming language and cryptographic libraries used._)
 
 (_Include challenges faced and how they were overcome._)
