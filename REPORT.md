@@ -250,7 +250,7 @@ We are using 4 ip adresses, so we can assign properly VMs with the interfaces we
 (_Discuss how server communications were secured, including the secure channel solutions implemented and any challenges encountered._)
 
 To secure our communications we set a firewall rule on database machine, where we only allow communications for mongodb port(27017) and the ip of the server (192.168.56.11).
-Ideally we should complement the usage of firewall rules with tls connection. This way, besides controlling the traffic in the network we could achieve confidentiality and integrity in the communication. We could not do that due to lack of time.
+Ideally we should complement the usage of firewall rules with tls connection. This way, besides controlling the traffic in the network we could achieve confidentiality and integrity in the communication. We tried to do that, but because of a Java bug we could not provide TLS connection.
 (_Explain what keys exist at the start and how are they distributed?_)
 
 ### 2.3. Security Challenge
