@@ -224,12 +224,9 @@ The cryptography library heavily utilized various Java packages, including:
 
 
 Our core cryptographic library provides operations such as:
-  - `protect (input-file) (output-file) ...` - add security to a document
-  - `unprotect (input-file) (output-file) ...` - remove security from a document
+  - `protect (input-file) (output-file)` - add security to a document
+  - `unprotect (input-file) (output-file)` - remove security from a document
   - `check (input-file)` - verify security of a document
-  - "note that: `...` denotes 0 or more arguments are expected.
-  - These arguments can be any of the following:
-    - [ name , sex, dateOfBirth, bloodType, knownAllergies, ConsultationRecords ]
 
 Our cryptographic library allows us to both `protect` and `unprotect` specified fields of our core document format.
 
@@ -253,7 +250,7 @@ We are using 4 ip adresses, so we can assign properly VMs with the interfaces we
 (_Discuss how server communications were secured, including the secure channel solutions implemented and any challenges encountered._)
 
 To secure our communications we set a firewall rule on database machine, where we only allow communications for mongodb port(27017) and the ip of the server (192.168.56.11).
-Ideally we should complement the usage of firewall rules with tls connection. This way, besides controlling the traffic in the network we could achieve confidentiality and integrity in the communication. We could not do that due to lack of time.
+Ideally we should complement the usage of firewall rules with tls connection. This way, besides controlling the traffic in the network we could achieve confidentiality and integrity in the communication. We tried to do that, but because of a Java bug we could not provide TLS connection.
 (_Explain what keys exist at the start and how are they distributed?_)
 
 ### 2.3. Security Challenge
@@ -261,8 +258,60 @@ Ideally we should complement the usage of firewall rules with tls connection. Th
 #### 2.3.1. Challenge Overview
 
 1) The security challenge requires that a user can share specific fields of his record with specific doctors.
+  - We 
 2) It is also stated that the record's safety should have a way to be overridden in case of an emergency.
+  - We have expanded our secure document format:
+  ```json
+  "metadata": {
+    "iv": {
+      "name": "",
+      "sex": "",
+      "dateOfBirth": "",
+      "bloodType": "",
+      "knownAllergies": "",
+      "consultationRecords": ""
+    },
+    "keys": {
+      "name": "",
+      "sex": "",
+      "dateOfBirth": "",
+      "bloodType": "",
+      "knownAllergies": "",
+      "consultationRecords": ""
+    },
+    "sos": {
+      "name": "",
+      "sex": "",
+      "dateOfBirth": "",
+      "bloodType": "",
+      "knownAllergies": "",
+      "consultationRecords": ""
+    },
+    "refreshToken": "",
+    "hash": ""
+  }
+  ```
+  - We have now a particular set of encrypted keys used only in SOS operations.
+  ```json
+   "sos": {
+      "name": "",
+      "sex": "",
+      "dateOfBirth": "",
+      "bloodType": "",
+      "knownAllergies": "",
+      "consultationRecords": ""
+    }
+  ```
+  - denotes the AES symmetric keys, used to secure the value of each of the fields of the core document format,
+    note that, each of the AES symmetric keys is later encrypted with RSA using a SOSO public key and subsequently encoded in Base 64
 3) Finally, each consultationRecord should be signed by the doctor.
+  - We have updated our cryptography library, besides the three main operations: 
+    - `protect()`,  `unprotect()`, `check()`.
+  - We have added two new operations specifically for handling consultation records.
+    - `sign (input-file) (output-file) (physician-private-key)`
+    - `verify-sign (input-file) (physician-public-key)`
+                                           
+  
 #### 2.3.2. Attacker Model
 
 ##### Trusted entities
