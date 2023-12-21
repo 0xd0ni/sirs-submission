@@ -10,12 +10,16 @@ import javax.net.ssl.SSLContext;
 import com.mongodb.ConnectionString;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.result.UpdateResult;
 import com.mongodb.client.model.Filters;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Iterator;
 import java.util.stream.StreamSupport;
 import java.util.Optional;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -74,9 +78,14 @@ public class MedicalRecordRepository{
 
     // Verificar se o registo é substituido
     public String save(String record) {
-        this.database
-        .getCollection("patients")
-        .insertOne(Document.parse(record));
+        if (this.find(new Gson().fromJson(record, JsonObject.class).get("name").getAsString()).isPresent()) {
+            this.database.getCollection("patients").replaceOne(new Document("name", new Gson().fromJson(record, JsonObject.class).get("name").getAsString()), Document.parse(record));
+        }
+        else {
+            this.database
+            .getCollection("patients")
+            .insertOne(Document.parse(record));
+        }
         return record;
     }
 
@@ -117,13 +126,18 @@ public class MedicalRecordRepository{
             this.database.getCollection(doctorName).insertOne(new Document().append("name", patientName).append("keys", Document.parse(keys)));
             return keys;
         }
+        currentKeys = new Gson().toJson(new Gson().fromJson(currentKeys, JsonObject.class).get("keys"));
         Document keysDocument = Document.parse(keys);
         Document newKeysDocument = Document.parse(currentKeys);
         for (String key : keysDocument.keySet()) {
             newKeysDocument.put(key, keysDocument.get(key));
         }
+        System.out.println("The new keys ares:" + newKeysDocument.toJson());
+        System.out.println("-_-_-_-_-_-_-_-_-_-_---_-_-_-_-_-_-_-_-_-_-_-_-_-_-----_-_-_-_---_-_-_-_-_-_");
         Bson updates = Updates.set("keys", newKeysDocument);
-        this.database.getCollection("keys").updateOne(new Document("name", patientName), updates);
+        UpdateResult res = this.database.getCollection(doctorName).updateOne(new Document("name", patientName), updates);
+        System.out.println("The result of the update is: " + res.toString());
+        System.out.println("The update did:" + res.wasAcknowledged());
         return keys;
     }
 }
