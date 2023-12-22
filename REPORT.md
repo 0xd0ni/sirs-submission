@@ -308,7 +308,7 @@ Ideally we should complement the usage of firewall rules with tls connection. Th
     }
   ```
   - denotes the AES symmetric keys, used to secure the value of each of the fields of the core document format,
-    note that, each of the AES symmetric keys is later encrypted with RSA using a SOSO public key and subsequently encoded in Base 64
+    note that, each of the AES symmetric keys is later encrypted with RSA using a SOS public key and subsequently encoded in Base 64
 3) Finally, each consultationRecord should be signed by the doctor.
   - We have updated our cryptography library, besides the three main operations: 
     - `protect()`,  `unprotect()`, `check()`.
@@ -357,8 +357,8 @@ Ideally use of the SOS keys would require special authentication of the person a
 
 
 ## 4. Bibliography
-
-(_Present bibliographic references, with clickable links. Always include at least the authors, title, "where published", and year._)
+[ecb vs cbc block cipher mode difference - Article September 8, 2021](ecb-vs-cbc-block-cipher-mode-difference)
+[Lecture slides](https://fenix.tecnico.ulisboa.pt/disciplinas/SIRS/2023-2024/1-semestre/theoretical-lectures)
 
 ----
-END OF REPORT
+
