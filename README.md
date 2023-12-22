@@ -20,8 +20,6 @@ It offers insights into the rationale behind these choices, the project's archit
 
 This document presents installation and demonstration instructions.
 
-*(adapt all of the following to your project, changing to the specific Linux distributions, programming languages, libraries, etc)*
-
 ## Installation
 
 To see the project in action, it is necessary to setup a virtual environment, with N networks and M machines.  
@@ -127,11 +125,6 @@ Access the record in an emergency
 ```
 --e Bob
 ```
-
-*(replace with actual commands)*
-
-*(IMPORTANT: show evidence of the security mechanisms in action; show message payloads, print relevant messages, perform simulated attacks to show the defenses in action, etc.)*
-
 This concludes the demonstration.
 
 ## To test the Cryptographic Library by itself
@@ -191,7 +184,6 @@ We use [SemVer](http://semver.org/) for versioning.
 
 This project is licensed under the MIT License - see the [LICENSE.txt](LICENSE.txt) for details.
 
-*(switch to another license, or no license, as you see fit)*
 
 ----
-END OF README
+
