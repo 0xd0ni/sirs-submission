@@ -31,7 +31,7 @@ The following diagram shows the networks and machines:
 ### Prerequisites
 
 All the virtual machines are based on: Linux 64-bit, Kali 2023.3  
-We create our whole infrastructure using Vagrant.
+We have created our whole infrastructure using Vagrant.
 
 ### Instructions to run the project
 ```
