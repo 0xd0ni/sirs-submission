@@ -358,6 +358,8 @@ Ideally use of the SOS keys would require special authentication of the person a
 
 ## 4. Bibliography
 [ecb vs cbc block cipher mode difference - Article September 8, 2021](ecb-vs-cbc-block-cipher-mode-difference)
+
+
 [Lecture slides](https://fenix.tecnico.ulisboa.pt/disciplinas/SIRS/2023-2024/1-semestre/theoretical-lectures)
 
 ----
