@@ -22,11 +22,8 @@ This document presents installation and demonstration instructions.
 
 ## Installation
 
-To see the project in action, it is necessary to setup a virtual environment, with N networks and M machines.  
+To see the project in action, it is necessary to setup a virtual environment, with 4 networks and 3 machines.  
 
-The following diagram shows the networks and machines:
-
-*(include a text-based or an image-based diagram)*
 
 ### Prerequisites
 
