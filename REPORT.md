@@ -123,7 +123,7 @@ Our secure document format has two main fields (keys):
     "bloodType": "",
     "knownAllergies": "",
     "consultationRecords": ""
-  }
+            }
   ```
   1. Each key has exactly the same name as the keys present in the original core document format.
 
@@ -305,7 +305,7 @@ Ideally we should complement the usage of firewall rules with tls connection. Th
       "bloodType": "",
       "knownAllergies": "",
       "consultationRecords": ""
-    }
+          }
   ```
   - denotes the AES symmetric keys, used to secure the value of each of the fields of the core document format,
     note that, each of the AES symmetric keys is later encrypted with RSA using a SOS public key and subsequently encoded in Base 64
@@ -318,12 +318,12 @@ Ideally we should complement the usage of firewall rules with tls connection. Th
   - Our consultation record document was also updated as shown bellow:
   ```json
   {
-  "date": "",
-  "medicalSpeciality": "",
-  "doctorName": "",
-  "practice": "",
-  "treatmentSummary": "",
-  "digitalSignature": ""
+    "date": "",
+    "medicalSpeciality": "",
+    "doctorName": "",
+    "practice": "",
+    "treatmentSummary": "",
+    "digitalSignature": ""
   }
   ```
                                            
