@@ -1,6 +1,7 @@
 package main.java.pt.tecnico.a01.client;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 
 import java.util.List;
@@ -81,10 +82,9 @@ public class ClientHttp {
             }
             else {
                 System.out.println("Record saved successfully");
-                System.out.println("Record: " + response.body().string());
             }
         } catch (Exception e) {
-            System.out.println("Error saving record: sobXception" + e.getMessage());
+            System.out.println("Error saving record: " + e.getMessage());
         }
     }
 
@@ -181,15 +181,13 @@ public class ClientHttp {
     public void shareKeys(String patientName, String[] fields, String doctorName, Key userPrivate, Key doctorPublic) {
         System.out.println("Sharing keys...");
         System.out.println("Patient: " + patientName);
-        System.out.println("Fields: " + fields);
+        System.out.println("Fields: " + fields.toString());
         System.out.println("Doctor: " + doctorName);
         JsonObject encryptedKeys = new JsonObject();
         try {
             JsonObject record = getRecord(patientName);
             // perhaps add a check of the record here
             JsonObject keys = CryptoLibrary.unprotectKeys(record.get("metadata").getAsJsonObject().get("keys").getAsJsonObject(), userPrivate);
-            System.out.println("Keys: " + gson.toJson(keys));
-            System.out.println("Fields: " + fields[0]);
             encryptedKeys = CryptoLibrary.protectKeys(keys, doctorPublic, fields);
         } catch (Exception e) {
             System.out.println("Error protecting keys: " + e.getMessage());
@@ -216,15 +214,16 @@ public class ClientHttp {
     }
 
     public void printRecord(JsonObject record) {
+        Gson prettyGson = new GsonBuilder().setPrettyPrinting().create();
         JsonObject patient = record.get("patient").getAsJsonObject();
         for (String field : CryptoLibrary.FIELDS) {
             if (patient.get(field) != null) { // How to check if a field was protected?
                 if (field.equals("knownAllergies")) {
-                    System.out.println(field + ": " + gson.toJson(patient.get(field).getAsJsonArray()) + ";");
+                    System.out.println(field + ": " + prettyGson.toJson(patient.get(field).getAsJsonArray()) + ";");
                 }
                 else if (field.equals("consultationRecords")) {
                     System.out.println();
-                    System.out.println(field + ": " + gson.toJson(patient.get(field).getAsJsonArray()));
+                    System.out.println(field + ": " + prettyGson.toJson(patient.get(field).getAsJsonArray()));
                 }
                 else {
                     System.out.println(field + ": " + patient.get(field).getAsString() + ";");
