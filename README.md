@@ -8,6 +8,11 @@
 | 97281  | Allan Fernandes   | <https://github.com/doonic>     | <mailto:allancravid@tecnico.ulisboa.pt>     |
 | 99330  | Stanislaw Talejko | <https://github.com/stani-s>    | <mailto:stanislaw.talejko@tecnico.ulisboa.pt> |
 
+| Name | Tasks                                              |
+|------|----------------------------------------------------|
+| Allan Fernandes   | Lead Developer of the Cryptographic Library        |
+| Diogo Silva    | Lead Developer of the Infrastructure               |
+|  Stanislaw Talejko   | Lead Developer of Client/Server                    |
 
 
 ## Contents
@@ -173,7 +178,7 @@ run verify-sign examples
 - [Vagrant](https://www.vagrantup.com/)
 - [MongoDB](https://www.mongodb.com/)
 
- 
+
 ### License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) for details.
