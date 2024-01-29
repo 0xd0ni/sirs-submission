@@ -8,7 +8,6 @@
 | 97281  | Allan Fernandes   | <https://github.com/doonic>     | <mailto:allancravid@tecnico.ulisboa.pt>     |
 | 99330  | Stanislaw Talejko | <https://github.com/stani-s>    | <mailto:stanislaw.talejko@tecnico.ulisboa.pt> |
 
-<img src='img/diogo.png' height='150'> <img src='img/allan.jpg' height='150'> <img src='img/stas.jpg' height='150'>
 
 
 ## Contents
@@ -86,7 +85,6 @@ vagrant@client:~/projects/Meditrack$ ./target/appassembler/bin/Client -a 192.168
 
 Now that all the networks and machines are up and running, ...
 
-*(give a tour of the best features of the application; add screenshots when relevant)*
 
 Log in as a patient
 ```
@@ -169,17 +167,16 @@ run verify-sign examples
 
 ### Links to Used Tools and Libraries
 
-- [Java 11.0.16.1](https://openjdk.java.net/)
+- [Java 17.0.9 ](https://openjdk.java.net/)
 - [Maven 3.9.5](https://maven.apache.org/)
-- ...
+- [Gson](https://github.com/google/gson)
+- [Vagrant](https://www.vagrantup.com/)
+- [MongoDB](https://www.mongodb.com/)
 
-### Versioning
-
-We use [SemVer](http://semver.org/) for versioning.  
-
+ 
 ### License
 
-This project is licensed under the MIT License - see the [LICENSE.txt](LICENSE.txt) for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) for details.
 
 
 ----
