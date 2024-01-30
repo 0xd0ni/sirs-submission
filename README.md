@@ -36,8 +36,8 @@ We have created our whole infrastructure using Vagrant.
 
 ### Instructions to run the project
 ```
-git clone https://github.com/tecnico-sec/a01-diogo-allan-stanislaw.git
-cd a01-diogo-allan-stanislaw/scripts
+git clone https://github.com/doonic/sirs-submission.git
+cd sirs-submission/scripts
 vagrant up 
 // This may take some minutes
 ```
